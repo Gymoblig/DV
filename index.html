@@ -1,0 +1,2616 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Databázy a vizualizácia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #0a0d12;
+    --bg-card: #12161d;
+    --bg-elevated: #181d26;
+    --bg-hover: #1f2530;
+    --border: #1d232d;
+    --border-light: #262d3a;
+    --text: #e8ecf3;
+    --text-secondary: #aab4c2;
+    --text-dim: #6a7588;
+    --accent: #6b9aff;
+    --accent-hover: #88b0ff;
+    --accent-soft: rgba(107, 154, 255, 0.08);
+    --accent-softer: rgba(107, 154, 255, 0.04);
+    --success: #4ade80;
+    --success-soft: rgba(74, 222, 128, 0.08);
+    --danger: #f87171;
+    --danger-soft: rgba(248, 113, 113, 0.08);
+    --warning: #fbbf24;
+    --code-bg: #0d1117;
+    --transition: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 380ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    padding: 36px 24px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    font-feature-settings: 'cv11', 'ss01';
+}
+.container { max-width: 1040px; margin: 0 auto; animation: fadeIn 500ms ease-out; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes cardSlide {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+header {
+    text-align: center;
+    padding: 48px 0 56px;
+    position: relative;
+}
+header::after {
+    content: '';
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 1px;
+    background: var(--border-light);
+}
+header h1 {
+    font-size: 1.75em;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.02em;
+}
+
+.tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 36px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+.tab {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    padding: 14px 22px;
+    cursor: pointer;
+    font-size: 0.92em;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: color var(--transition), border-color var(--transition);
+    font-family: inherit;
+    letter-spacing: 0.005em;
+    margin-bottom: -1px;
+    position: relative;
+}
+.tab:hover { color: var(--text-secondary); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 350ms ease-out; }
+
+/* TAHAK */
+.section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: border-color var(--transition);
+}
+.section:hover { border-color: var(--border-light); }
+.section-header {
+    padding: 18px 22px;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background var(--transition);
+}
+.section-header:hover { background: var(--bg-elevated); }
+.section-header h2 {
+    font-size: 1em;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.005em;
+}
+.section-header .toggle {
+    font-size: 1.05em;
+    color: var(--text-dim);
+    transition: transform var(--transition), color var(--transition);
+    font-weight: 300;
+}
+.section-body {
+    padding: 22px 24px 26px;
+    display: none;
+    border-top: 1px solid var(--border);
+}
+.section.open .section-body { display: block; animation: slideDown 320ms ease-out; }
+.section.open .toggle { transform: rotate(90deg); color: var(--accent); }
+.section-body h3 {
+    color: var(--text);
+    margin: 22px 0 10px;
+    font-size: 0.98em;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+.section-body h3:first-child { margin-top: 0; }
+.section-body h4 { color: var(--accent); margin: 16px 0 8px; font-weight: 500; font-size: 0.95em; }
+.section-body p, .section-body ul, .section-body ol {
+    margin-bottom: 14px;
+    color: var(--text-secondary);
+}
+.section-body ul, .section-body ol { padding-left: 22px; }
+.section-body li { margin-bottom: 6px; line-height: 1.65; }
+.section-body strong { color: var(--text); font-weight: 600; }
+.section-body code {
+    background: var(--code-bg);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.88em;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+.section-body pre {
+    background: var(--code-bg);
+    padding: 16px 18px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 14px 0;
+    border: 1px solid var(--border);
+    font-size: 0.88em;
+}
+.section-body pre code { background: none; padding: 0; color: var(--text-secondary); }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 0.92em;
+}
+th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+th {
+    background: var(--bg-elevated);
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.82em;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+td { color: var(--text-secondary); }
+tr:last-child td { border-bottom: none; }
+.note {
+    background: var(--accent-softer);
+    border-left: 2px solid var(--accent);
+    padding: 14px 18px;
+    border-radius: 4px;
+    margin: 14px 0;
+    color: var(--text-secondary);
+}
+.warn {
+    background: rgba(251, 191, 36, 0.04);
+    border-left: 2px solid var(--warning);
+    padding: 14px 18px;
+    border-radius: 4px;
+    margin: 14px 0;
+    color: var(--text-secondary);
+}
+
+/* BUTTONS */
+.btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 11px 22px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+    font-family: inherit;
+    letter-spacing: 0.005em;
+}
+.btn:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(107, 154, 255, 0.18); }
+.btn:active { transform: translateY(0); box-shadow: none; }
+.btn-secondary {
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-light);
+}
+.btn-secondary:hover {
+    background: var(--bg-hover);
+    color: var(--text);
+    box-shadow: none;
+    border-color: var(--accent);
+}
+
+/* KARTICKY */
+.flashcard-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+}
+.filter-select {
+    background: var(--bg-card);
+    color: var(--text);
+    border: 1px solid var(--border-light);
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color var(--transition);
+    min-width: 220px;
+}
+.filter-select:hover { border-color: var(--accent); }
+.filter-select:focus { outline: none; border-color: var(--accent); }
+.progress-info { color: var(--text-dim); font-size: 0.88em; letter-spacing: 0.02em; }
+.flashcard {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 36px 38px;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    animation: cardSlide 320ms ease-out;
+}
+.card-num {
+    color: var(--text-dim);
+    font-size: 0.78em;
+    margin-bottom: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+.card-category {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 0.72em;
+    margin-bottom: 22px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.card-question {
+    font-size: 1.18em;
+    color: var(--text);
+    margin-bottom: 24px;
+    font-weight: 500;
+    line-height: 1.55;
+    letter-spacing: -0.005em;
+}
+.card-answer {
+    background: var(--bg-elevated);
+    padding: 18px 22px;
+    border-radius: 8px;
+    border-left: 2px solid var(--success);
+    color: var(--text-secondary);
+    line-height: 1.7;
+    display: none;
+}
+.card-answer.shown { display: block; animation: slideDown 250ms ease-out; }
+.card-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 26px;
+    flex-wrap: wrap;
+}
+
+/* SKUSKA */
+.exam-question {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    overflow: hidden;
+    transition: border-color var(--transition);
+}
+.exam-question:hover { border-color: var(--border-light); }
+.exam-question-header {
+    padding: 16px 22px;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    transition: background var(--transition);
+}
+.exam-question-header:hover { background: var(--bg-elevated); }
+.exam-question-header .q-num {
+    color: var(--accent);
+    font-weight: 600;
+    flex-shrink: 0;
+    font-size: 0.88em;
+    letter-spacing: 0.02em;
+}
+.exam-question-header .q-text {
+    flex: 1;
+    font-weight: 500;
+    color: var(--text);
+    font-size: 0.94em;
+    line-height: 1.5;
+}
+.exam-question-header .toggle {
+    color: var(--text-dim);
+    font-size: 1.05em;
+    transition: transform var(--transition), color var(--transition);
+    font-weight: 300;
+}
+.exam-answer {
+    padding: 0 22px 22px;
+    display: none;
+    border-top: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+.exam-question.open .exam-answer { display: block; padding-top: 18px; animation: slideDown 280ms ease-out; }
+.exam-question.open .toggle { transform: rotate(90deg); color: var(--accent); }
+.exam-category {
+    color: var(--text-dim);
+    padding: 8px 0 14px;
+    margin: 32px 0 16px;
+    font-size: 0.78em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    border-bottom: 1px solid var(--border);
+}
+.exam-category:first-child { margin-top: 4px; }
+
+/* ABCD TEST */
+.test-start {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 56px 44px;
+    text-align: center;
+    animation: cardSlide 380ms ease-out;
+}
+.test-start h3 {
+    color: var(--text);
+    margin-bottom: 14px;
+    font-size: 1.3em;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+.test-start p {
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 0.95em;
+}
+.test-options {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    max-width: 380px;
+    margin: 0 auto 32px;
+    text-align: left;
+}
+.test-options label {
+    color: var(--text-secondary);
+    font-size: 0.82em;
+    display: block;
+    margin-bottom: 8px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+.test-options select {
+    background: var(--bg-elevated);
+    color: var(--text);
+    border: 1px solid var(--border-light);
+    padding: 12px 14px;
+    border-radius: 6px;
+    font-size: 0.95em;
+    width: 100%;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color var(--transition);
+}
+.test-options select:hover { border-color: var(--accent); }
+.test-options select:focus { outline: none; border-color: var(--accent); }
+.test-quiz {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 38px;
+    animation: cardSlide 320ms ease-out;
+}
+.test-progress-bar {
+    background: var(--bg-elevated);
+    height: 3px;
+    border-radius: 2px;
+    margin-bottom: 26px;
+    overflow: hidden;
+}
+.test-progress-fill {
+    background: var(--accent);
+    height: 100%;
+    transition: width 420ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.test-meta {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-dim);
+    font-size: 0.82em;
+    margin-bottom: 16px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+.test-category-badge {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 0.7em;
+    margin-bottom: 16px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.test-question {
+    font-size: 1.16em;
+    color: var(--text);
+    margin-bottom: 28px;
+    line-height: 1.55;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+}
+.test-answers {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.test-answer {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-light);
+    color: var(--text);
+    padding: 14px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.94em;
+    transition: border-color var(--transition), background var(--transition), transform var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    line-height: 1.45;
+    font-family: inherit;
+}
+.test-answer:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: var(--bg-hover);
+    transform: translateX(3px);
+}
+.test-answer:disabled { cursor: default; }
+.test-answer .letter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    font-size: 0.85em;
+    transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.test-answer.correct {
+    border-color: var(--success);
+    background: var(--success-soft);
+    color: var(--text);
+}
+.test-answer.correct .letter {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
+}
+.test-answer.wrong {
+    border-color: var(--danger);
+    background: var(--danger-soft);
+    color: var(--text);
+}
+.test-answer.wrong .letter {
+    background: var(--danger);
+    color: white;
+    border-color: var(--danger);
+}
+.test-feedback {
+    margin-top: 22px;
+    padding: 14px 18px;
+    border-radius: 6px;
+    display: none;
+    font-size: 0.93em;
+}
+.test-feedback.shown { display: block; animation: slideDown 240ms ease-out; }
+.test-feedback.correct {
+    background: var(--success-soft);
+    border-left: 2px solid var(--success);
+    color: var(--text);
+}
+.test-feedback.wrong {
+    background: var(--danger-soft);
+    border-left: 2px solid var(--danger);
+    color: var(--text);
+}
+.test-next {
+    margin-top: 24px;
+    text-align: right;
+}
+.test-result {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 56px 44px;
+    text-align: center;
+    animation: cardSlide 380ms ease-out;
+}
+.test-result h2 {
+    color: var(--text);
+    font-size: 1.3em;
+    margin-bottom: 8px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+.test-score {
+    font-size: 3em;
+    color: var(--accent);
+    margin: 24px 0 16px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+}
+.test-score.good { color: var(--success); }
+.test-score.mid { color: var(--warning); }
+.test-score.bad { color: var(--danger); }
+.test-result-detail {
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    font-size: 0.98em;
+}
+.test-result button { margin: 0 4px; }
+.test-review {
+    margin-top: 36px;
+    text-align: left;
+    animation: slideDown 300ms ease-out;
+}
+.test-review h3 {
+    color: var(--text);
+    margin-bottom: 16px;
+    font-weight: 600;
+    font-size: 0.95em;
+    letter-spacing: 0.02em;
+}
+.review-item {
+    background: var(--bg-elevated);
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border-left: 2px solid var(--danger);
+    font-size: 0.92em;
+}
+.review-item .q { color: var(--text); margin-bottom: 8px; font-weight: 500; line-height: 1.5; }
+.review-item .ans-given { color: var(--danger); font-size: 0.92em; margin-bottom: 3px; }
+.review-item .ans-correct { color: var(--success); font-size: 0.92em; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+@media (max-width: 700px) {
+    body { padding: 20px 14px; }
+    header { padding: 28px 0 36px; }
+    header::after { bottom: 16px; }
+    header h1 { font-size: 1.4em; }
+    .tab { padding: 12px 16px; font-size: 0.86em; }
+    .flashcard, .test-quiz { padding: 26px 22px; }
+    .test-start, .test-result { padding: 36px 24px; }
+    .card-question, .test-question { font-size: 1.05em; }
+    .section-header { padding: 16px 18px; }
+    .section-body { padding: 18px 18px 22px; }
+    .filter-select { min-width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+    <h1>Databázy a vizualizácia</h1>
+</header>
+
+<div class="tabs">
+    <button class="tab active" onclick="showTab('tahak')">Ťahák</button>
+    <button class="tab" onclick="showTab('karticky')">Kartičky</button>
+    <button class="tab" onclick="showTab('skuska')">Skúška</button>
+    <button class="tab" onclick="showTab('test')">ABCD Test</button>
+</div>
+
+<!-- TAHAK -->
+<div id="tahak" class="tab-content active">
+<p style="color: var(--text-dim); margin-bottom: 16px;">Klikni na sekciu pre rozbalenie. Klikni na <em>Rozbaliť všetko</em> ak chceš mať otvorené naraz.</p>
+<button class="btn btn-secondary" onclick="toggleAll(true)">Rozbaliť všetko</button>
+<button class="btn btn-secondary" onclick="toggleAll(false)">Zbaliť všetko</button>
+<div style="margin-top: 20px;">
+
+<div class="section">
+<div class="section-header" onclick="toggleSection(this)"><h2>1. Základné pojmy</h2><span class="toggle">›</span></div>
+<div class="section-body">
+<ul>
+<li><strong>Databáza</strong> — zbierka previazaných údajov bez zbytočnej redundancie. Cieľ: vyhnúť sa anomáliám (vkladania, aktualizácie, mazania).</li>
+<li><strong>SRBD / DBMS</strong> — softvér nad OS, ktorý umožňuje prístup, uchovávanie, aktualizáciu, zálohy a zabezpečenie.</li>
+<li><strong>CRUD</strong> — Create, Read, Update, Delete.</li>
+<li><strong>SQL kategórie</strong> — DDL (CREATE/ALTER/DROP), DML (SELECT/INSERT/UPDATE/DELETE), DCL/TCL (GRANT/COMMIT).</li>
+</ul>
+<h3>Typy databáz</h3>
+<table>
+<tr><th>Typ</th><th>Uloženie</th><th>Príklady</th></tr>
+<tr><td>Relačné (SQL)</td><td>tabuľky, kľúče</td><td>MySQL, Oracle, PostgreSQL</td></tr>
+<tr><td>Dokumentové</td><td>JSON/BSON</td><td>MongoDB</td></tr>
+<tr><td>Grafové</td><td>uzly + hrany</td><td>Neo4j</td></tr>
+<tr><td>Key-Value</td><td>kľúč → hodnota</td><td>Redis</td></tr>
+<tr><td>Stĺpcové</td><td>po stĺpcoch</td><td>Cassandra</td></tr>
+</table>
+<h3>Anomálie pri zlom návrhu</h3>
+<ul>
+<li><strong>Vkladania</strong> — nemôžem evidovať X bez Y (napr. internát bez študenta)</li>
+<li><strong>Aktualizácie</strong> — zmena údaja vyžaduje úpravu vo viacerých riadkoch → nekonzistencia</li>
+<li><strong>Mazania</strong> — zmazaním záznamu stratím aj iné informácie</li>
+</ul>
+<h3>Funkčná závislosť</h3>
+<p><strong>A → B</strong> = pre každú hodnotu A existuje práve jedna hodnota B. Príklady: <code>id_pouzivatela → meno</code>, <code>mesto → PSC</code>, <code>funkcia → plat</code>.</p>
+</div>
+</div>
+
+<div class="section">
+<div class="section-header" onclick="toggleSection(this)"><h2>2. Databázové kľúče</h2><span class="toggle">›</span></div>
+<div class="section-body">
+<div class="warn"><strong>Pozor:</strong> typy kľúčov sa pýtajú takmer vždy. Nauč sa rozlišovať Primary, Candidate, Superkey, Alternate, Foreign, Surrogate, Natural.</div>
+<table>
+<tr><th>Kľúč</th><th>Definícia</th></tr>
+<tr><td><strong>Primary key (PK)</strong></td><td>jednoznačne identifikuje riadok, NEsmie obsahovať NULL</td></tr>
+<tr><td><strong>Candidate key</strong></td><td>MINIMÁLNA množina atribútov ktorá jednoznačne identifikuje riadky</td></tr>
+<tr><td><strong>Superkey</strong></td><td>množina ktorá identifikuje riadky (nemusí byť minimálna)</td></tr>
+<tr><td><strong>Alternate key</strong></td><td>kandidátny ktorý nebol zvolený za PK; jedinečnosť cez UNIQUE</td></tr>
+<tr><td><strong>Foreign key (FK/CK)</strong></td><td>odkaz na PK/UNIQUE inej tabuľky; referenčná integrita; môže byť NULL</td></tr>
+<tr><td><strong>Surrogate key</strong></td><td>umelo vytvorený identifikátor bez významu (AUTO_INCREMENT ID)</td></tr>
+<tr><td><strong>Natural key</strong></td><td>z reálnych atribútov entity (rodné číslo, ISIC)</td></tr>
+<tr><td><strong>Simple key</strong></td><td>1 stĺpec</td></tr>
+<tr><td><strong>Composite/Compound</strong></td><td>kombinácia viacerých stĺpcov</td></tr>
+<tr><td><strong>Intelligent key</strong></td><td>časti nesú význam (napr. <code>kl-st-02</code>)</td></tr>
+</table>
+</div>
+</div>
+
+<div class="section">
+<div class="section-header" onclick="toggleSection(this)"><h2>3. Vybrané dátové typy MySQL</h2><span class="toggle">›</span></div>
+<div class="section-body">
+<h3>Celé čísla</h3>
+<table>
+<tr><th>Typ</th><th>Veľkosť</th><th>Rozsah (signed)</th></tr>
+<tr><td>TINYINT</td><td>1 B</td><td>-128 až 127</td></tr>
+<tr><td>SMALLINT</td><td>2 B</td><td>-32 768 až 32 767</td></tr>
+<tr><td>INT</td><td>4 B</td><td>-2,1 mld až 2,1 mld</td></tr>
+<tr><td>BIGINT</td><td>8 B</td><td>±2<sup>63</sup></td></tr>
+</table>
+<h3>Desatinné</h3>
+<ul>
+<li><strong>DECIMAL(c,d)</strong> — PRESNÁ hodnota. Napr. DECIMAL(5,2) = -999.99 až 999.99. Vhodné pre <strong>peniaze</strong>.</li>
+<li><strong>FLOAT</strong> (4 B) / <strong>DOUBLE</strong> (8 B) — APROXIMOVANÉ hodnoty, zaokrúhľujú!</li>
+</ul>
+<h3>Textové</h3>
+<ul>
+<li><strong>CHAR(N)</strong> — pevná dĺžka 0-255 B, rýchle, plytvanie miestom.</li>
+<li><strong>VARCHAR(N)</strong> — premenlivá dĺžka 0-65535 B, šetrí miesto, pomalšie.</li>
+</ul>
+<h3>Dátum a čas</h3>
+<ul>
+<li><strong>DATE</strong> — <code>'RRRR-MM-DD'</code></li>
+<li><strong>TIME</strong> — <code>'HH:MM:SS'</code></li>
+<li><strong>DATETIME</strong> — <code>'RRRR-MM-DD HH:MM:SS'</code></li>
+<li><strong>YEAR</strong> — 1901 až 2155</li>
+</ul>
+</div>
+</div>
+
+<div class="section">
+<div class="section-header" onclick="toggleSection(this)"><h2>4. ERA modelovanie a kardinalita</h2><span class="toggle">›</span></div>
+<div class="section-body">
+<h3>Úrovne</h3>
+<ol>
+<li><strong>Konceptuálny</strong> — entity a vzťahy (vysoká abstrakcia)</li>
+<li><strong>Logický</strong> — + atribúty</li>
+<li><strong>Fyzický</strong> — tabuľky, dátové typy v konkrétnej DB</li>
+</ol>
+<h3>Základné pojmy</h3>
+<ul>
+<li><strong>Entita</strong> → tabuľka</li>
+<li><strong>Atribút</strong> → stĺpec</li>
+<li><strong>Vzťah (relácia)</strong> → prepojenie entít</li>
+</ul>
+<h3>Kardinalita (maximum)</h3>
+<ul>
+<li><strong>1:1</strong> — osoba↔občiansky preukaz. V DB: jedna tabuľka alebo FK.</li>
+<li><strong>1:N</strong> — čitateľ↔knihy. <strong>FK na strane "N"</strong>.</li>
+<li><strong>M:N</strong> — študent↔predmety, film↔herci. Vyžaduje <strong>prepojovaciu tabuľku</strong> s 2 FK!</li>
+</ul>
+<h3>Modalita (minimum)</h3>
+<p>0 = nepovinný, 1 = povinný. Zápis (min, max). POZOR: zapisuje sa na opačnú stranu, než ktorej entity sa týka.</p>
+<h3>Crow's Foot symboly</h3>
+<ul>
+<li><code>|</code> — presne jeden (povinný)</li>
+<li><code>o</code> — nula (nepovinný)</li>
+<li><code>&lt;</code> — viac</li>
+<li><code>|&lt;</code> — 1..N (jeden alebo viac)</li>
+<li><code>o&lt;</code> — 0..N (nula alebo viac)</li>
+</ul>
+</div>
+</div>
+
+<div class="section">
+<div class="section-header" onclick="toggleSection(this)"><h2>5. Normalizácia (1NF, 2NF, 3NF)</h2><span class="toggle">›</span></div>
+<div class="section-body">
+<div class="note">Cieľ: efektívne organizovať údaje, eliminovať redundanciu, zachovať integritu. V praxi sa normalizuje <strong>do 3NF</strong>.</div>
+
+<h3>1NF — Prvá normálna forma</h3>
+<ol>
+<li>Tabuľka má <strong>PK</strong></li>
+<li>Každý atribút má <strong>atomické hodnoty</strong> (nedeliteľné)</li>
+<li>Žiadne <strong>opakujúce sa atribúty</strong> (typu kurz1, kurz2, kurz3)</li>
+</ol>
+<p><strong>Porušenia:</strong> zoznam v bunke <code>"100, 105, 102"</code>; stĺpce telefon1/telefon2/telefon3; neatomické "adresa" obsahujúca ulicu+mesto.</p>
+
+<h3>2NF — Druhá normálna forma</h3>
+<ol>
+<li>Je v <strong>1NF</strong></li>
+<li>Každý nekľúčový atribút je <strong>úplne funkčne závislý od CELÉHO PK</strong></li>
+</ol>
+<p>Problém vzniká len pri <strong>zložených PK</strong>. Ak časť atribútov závisí len od časti PK, treba ich vyčleniť.</p>
+<p><strong>Príklad:</strong> Hodnotenie(student PK, kod_predmetu PK, nazov_predmetu, znamka) — <code>nazov_predmetu</code> závisí len od <code>kod_predmetu</code>. Riešenie: oddeliť tabuľku Predmety.</p>
+
+<h3>3NF — Tretia normálna forma</h3>
+<ol>
+<li>Je v <strong>2NF</strong></li>
+<li>Žiadny nekľúčový atribút nie je <strong>tranzitívne závislý</strong> od PK</li>
+</ol>
+<p><strong>Tranzitívna závislosť:</strong> PK → A → B, kde A aj B sú nekľúčové.</p>
+<p><strong>Príklad:</strong> Zam(rc, meno, mesto, PSC, funkcia, plat) — <code>mesto → PSC</code> a <code>funkcia → plat</code>. Riešenie: oddeliť tabuľky Mesto a Funkcia.</p>
+
+<h3>Denormalizácia</h3>
+<ul>
+<li><strong>Opačný proces</strong> — zámerné pridanie redundancie</li>
+<li><strong>Cieľ:</strong> zrýchliť SELECT, znížiť počet JOIN-ov</li>
+<li><strong>Cena:</strong> duplicita, riziko nekonzistencie, zložitejšie INSERT/UPDATE</li>
+</ul>
+</div>
+</div>
+
+<div class="section">
+<div class="section-header" onclick="toggleSection(this)"><h2>6. SQL — najdôležitejšie príkazy</h2><span class="toggle">›</span></div>
+<div class="section-body">
+<h3>DDL — CREATE / ALTER / DROP</h3>
+<pre><code>CREATE TABLE Zamestnanci (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    meno VARCHAR(50) NOT NULL,
+    plat DECIMAL(8,2) DEFAULT 0,
+    id_oddelenie INT,
+    FOREIGN KEY (id_oddelenie) REFERENCES Oddelenia(id)
+        ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+ALTER TABLE Zamestnanci ADD COLUMN email VARCHAR(100) UNIQUE;
+ALTER TABLE Zamestnanci MODIFY COLUMN meno VARCHAR(100);
+ALTER TABLE Zamestnanci DROP COLUMN plat;
+
+DROP TABLE Zamestnanci;</code></pre>
+
+<h3>Constraints</h3>
+<p><code>NOT NULL</code>, <code>UNIQUE</code>, <code>PRIMARY KEY</code>, <code>FOREIGN KEY</code>, <code>CHECK</code>, <code>DEFAULT</code>, <code>AUTO_INCREMENT</code></p>
+
+<h3>FK akcie</h3>
+<ul>
+<li><strong>CASCADE</strong> — prepíše do závislých</li>
+<li><strong>SET NULL</strong> — nastaví NULL</li>
+<li><strong>RESTRICT / NO ACTION</strong> — zakáže operáciu</li>
+</ul>
+
+<h3>DML — INSERT / UPDATE / DELETE</h3>
+<pre><code>INSERT INTO Zamestnanci (meno, plat) VALUES ('Jano', 1200.00);
+UPDATE Zamestnanci SET plat = plat * 1.10 WHERE id_oddelenie = 1;
+DELETE FROM Zamestnanci WHERE id = 5;
+TRUNCATE TABLE Zamestnanci; -- rýchle, resetuje AUTO_INCREMENT, nedá sa rollbackovať</code></pre>
+
+<h3>SELECT — kompletná štruktúra</h3>
+<pre><code>SELECT [DISTINCT] stlpce
+FROM tabulka
+[JOIN ...]
+[WHERE podmienka]
+[GROUP BY stlpce]
+[HAVING podmienka_na_skupiny]
+[ORDER BY stlpce ASC|DESC]
+[LIMIT pocet OFFSET start];</code></pre>
+
+<h3>Logické poradie vykonania</h3>
+<p><strong>FROM → JOIN → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT</strong></p>
+
+<div class="warn"><strong>WHERE vs HAVING:</strong> WHERE filtruje riadky <em>pred</em> zoskupením, HAVING filtruje skupiny <em>po</em> GROUP BY (môže obsahovať agregačné funkcie).</div>
+
+<h3>Operátory</h3>
+<ul>
+<li>Porovnávanie: <code>=, &lt;&gt;, &lt;, &gt;, &lt;=, &gt;=</code></li>
+<li>Logické: <code>AND, OR, NOT</code></li>
+<li>Rozsah: <code>BETWEEN x AND y</code></li>
+<li>Množina: <code>IN (a, b, c)</code></li>
+<li>Vzor: <code>LIKE 'A%'</code> (% = ľubovoľne, _ = 1 znak)</li>
+<li>NULL: <code>IS NULL</code> / <code>IS NOT NULL</code> (nie =NULL!)</li>
+</ul>
+
+<h3>Agregačné funkcie</h3>
+<p><strong>COUNT, SUM, AVG, MIN, MAX</strong></p>
+<pre><code>SELECT id_oddelenie, COUNT(*) AS pocet, AVG(plat) AS priemer
+FROM Zamestnanci
+WHERE plat &gt; 500
+GROUP BY id_oddelenie
+HAVING AVG(plat) &gt; 1000;</code></pre>
+
+<h3>JOIN typy</h3>
+<table>
+<tr><th>Typ</th><th>Význam</th></tr>
+<tr><td>INNER JOIN</td><td>iba zhody v oboch tabuľkách</td></tr>
+<tr><td>LEFT JOIN</td><td>všetko z ľavej + zhody z pravej (chýbajúce = NULL)</td></tr>
+<tr><td>RIGHT JOIN</td><td>všetko z pravej + zhody z ľavej</td></tr>
+<tr><td>FULL JOIN</td><td>všetko z oboch (v MySQL cez UNION)</td></tr>
+<tr><td>CROSS JOIN</td><td>kartézsky súčin</td></tr>
+<tr><td>SELF JOIN</td><td>tabuľka so sebou</td></tr>
+</table>
+<pre><code>SELECT z.meno, o.nazov
+FROM Zamestnanci z
+INNER JOIN Oddelenia o ON z.id_oddelenie = o.id;</code></pre>
+
+<h3>VIEW (pohľad)</h3>
+<pre><code>CREATE VIEW v_top_platy AS
+SELECT meno, plat FROM Zamestnanci WHERE plat &gt; 2000;</code></pre>
+<p>Virtuálna tabuľka — zjednodušuje opakované dotazy, skrýva komplexnosť, zvyšuje bezpečnosť.</p>
+
+<h3>INDEX</h3>
+<pre><code>CREATE INDEX idx_meno ON Zamestnanci(meno);
+CREATE UNIQUE INDEX idx_email ON Zamestnanci(email);</code></pre>
+<p>Zrýchľuje SELECT/WHERE/JOIN, ale <strong>spomaľuje</strong> INSERT/UPDATE/DELETE. PK má index automaticky.</p>
+
+<h3>TRANSAKCIE — ACID</h3>
+<ul>
+<li><strong>A</strong>tomicity — buď celé alebo nič</li>
+<li><strong>C</strong>onsistency — DB ostane v konzistentnom stave</li>
+<li><strong>I</strong>solation — paralelné transakcie sa neovplyvňujú</li>
+<li><strong>D</strong>urability — po COMMIT-e zmeny trvajú aj po zlyhaní</li>
+</ul>
+<pre><code>START TRANSACTION;
+UPDATE Ucty SET zostatok = zostatok - 100 WHERE id = 1;
+UPDATE Ucty SET zostatok = zostatok + 100 WHERE id = 2;
+COMMIT; -- alebo ROLLBACK</code></pre>
+<p><strong>Izolačné úrovne:</strong> READ UNCOMMITTED → READ COMMITTED → REPEATABLE READ → SERIALIZABLE</p>
+<p><strong>Problémy:</strong> dirty read, non-repeatable read, phantom read</p>
+
+<h3>Zámky (LOCKS)</h3>
+<ul>
+<li><strong>Shared (S)</strong> — pre čítanie, viacero transakcií súčasne</li>
+<li><strong>Exclusive (X)</strong> — pre zápis, len jedna transakcia</li>
+<li><strong>Deadlock</strong> — vzájomné čakanie, DBMS jednu transakciu zruší</li>
+</ul>
+
+<h3>TRIGGER</h3>
+<pre><code>CREATE TRIGGER pred_insert
+BEFORE INSERT ON Zamestnanci
+FOR EACH ROW
+SET NEW.datum_vytvorenia = NOW();</code></pre>
+<p>Časy: BEFORE/AFTER · Udalosti: INSERT/UPDATE/DELETE · Pseudo-tabuľky: NEW, OLD</p>
+
+<h3>PROCEDURE vs FUNCTION</h3>
+<ul>
+<li><strong>Procedure</strong> — volá sa cez <code>CALL</code>, nemusí vracať hodnotu</li>
+<li><strong>Function</strong> — vracia hodnotu, dá sa použiť v SELECT</li>
+</ul>
+<pre><code>CREATE PROCEDURE zvys_plat(IN id_z INT, IN o DECIMAL(5,2))
+BEGIN
+    UPDATE Zamestnanci SET plat = plat + o WHERE id = id_z;
+END;
+CALL zvys_plat(1, 100.00);</code></pre>
+
+<h3>USERS</h3>
+<pre><code>CREATE USER 'jano'@'localhost' IDENTIFIED BY 'heslo';
+GRANT SELECT, INSERT ON db.* TO 'jano'@'localhost';
+REVOKE INSERT ON db.* FROM 'jano'@'localhost';
+DROP USER 'jano'@'localhost';</code></pre>
+
+<h3>SHOW</h3>
+<pre><code>SHOW DATABASES;
+SHOW TABLES;
+SHOW COLUMNS FROM Zamestnanci;
+DESCRIBE Zamestnanci;
+SHOW CREATE TABLE Zamestnanci;
+SHOW INDEX FROM Zamestnanci;</code></pre>
+</div>
+</div>
+
+<div class="section">
+<div class="section-header" onclick="toggleSection(this)"><h2>7. MongoDB (NoSQL)</h2><span class="toggle">›</span></div>
+<div class="section-body">
+<ul>
+<li>Dáta uložené ako <strong>dokumenty</strong> vo formáte <strong>BSON</strong> (binary JSON)</li>
+<li>Dokumenty v <strong>kolekciách</strong> (analógia tabuliek)</li>
+<li><strong>Bez pevnej schémy</strong> — každý dokument môže mať iné polia</li>
+<li>Každý dokument má <code>_id</code> (ObjectId)</li>
+<li>Horizontálne škálovanie (sharding)</li>
+</ul>
+<pre><code>db.pouzivatelia.insertOne({ meno: "Jano", vek: 25, hobby: ["futbal", "kniha"] });
+db.pouzivatelia.find({ vek: { $gt: 18 } });
+db.pouzivatelia.updateOne({ meno: "Jano" }, { $set: { vek: 26 } });
+db.pouzivatelia.deleteOne({ meno: "Jano" });</code></pre>
+<h3>SQL vs MongoDB</h3>
+<table>
+<tr><th>SQL</th><th>MongoDB</th></tr>
+<tr><td>Tabuľka</td><td>Kolekcia</td></tr>
+<tr><td>Riadok</td><td>Dokument</td></tr>
+<tr><td>Stĺpec</td><td>Pole</td></tr>
+<tr><td>JOIN</td><td>$lookup / vnorené dokumenty</td></tr>
+<tr><td>PK</td><td>_id</td></tr>
+</table>
+</div>
+</div>
+
+<div class="section">
+<div class="section-header" onclick="toggleSection(this)"><h2>8. Vizualizácia v RS — základy</h2><span class="toggle">›</span></div>
+<div class="section-body">
+<h3>Komponenty RS</h3>
+<ul>
+<li><strong>Technologický proces</strong> — nádrže, čerpadlá, ventily, motory</li>
+<li><strong>Senzory</strong> — teplota, tlak, hladina, prietok</li>
+<li><strong>Akčné členy</strong> — ventily, motory, čerpadlá</li>
+<li><strong>PLC</strong> — programovateľný automat s riadiacim algoritmom</li>
+<li><strong>Operátor</strong> — človek</li>
+</ul>
+<h3>Úlohy vizualizácie</h3>
+<ul>
+<li>Monitoring procesu (zobrazenie stavu)</li>
+<li>Ovládanie technológie (parametre, povely)</li>
+<li>Signalizácia porúch / alarmy</li>
+<li>Diagnostika a údržba</li>
+<li>Archivácia (historické dáta)</li>
+<li>Trendy</li>
+</ul>
+<div class="note"><strong>Vizualizácia premieňa interné dáta riadiaceho systému na informácie zrozumiteľné pre človeka.</strong></div>
+<h3>Prenos dát PLC ↔ HMI</h3>
+<table>
+<tr><th>Typ údaja</th><th>Smer</th></tr>
+<tr><td>Procesné veličiny (teplota...)</td><td>čítame z PLC</td></tr>
+<tr><td>Stavy zariadení (binárne)</td><td>čítame z PLC</td></tr>
+<tr><td>Parametre / recepty</td><td>zapisujeme do PLC</td></tr>
+<tr><td>Riadiace povely (ZAP/VYP)</td><td>zapisujeme do PLC</td></tr>
+</table>
+<h3>Roly v projekte</h3>
+<ul>
+<li>Programátor PLC</li>
+<li>Vývojár HMI/SCADA</li>
+<li>Technológ</li>
+<li>IT/DB špecialista</li>
+<li>Projektant (P&amp;ID schémy)</li>
+</ul>
+</div>
+</div>
+
+<div class="section">
+<div class="section-header" onclick="toggleSection(this)"><h2>9. Stavebné prvky HMI</h2><span class="toggle">›</span></div>
+<div class="section-body">
+<ul>
+<li><strong>Premenné (tags)</strong> — externé (z PLC) / interné (len HMI). Vytváranie: manuálne / import / linkovaním</li>
+<li><strong>Obrazovky</strong> — Base (technologická) / Master/Template (spoločné prvky) / Popup (pomocné okná)</li>
+<li><strong>Grafické objekty</strong> — texty, tlačidlá, indikátory, symboly (motory, ventily, nádrže), animácie</li>
+<li><strong>Alarmy</strong> — binárne / analógové (limity HI, LO, HIHI, LOLO)</li>
+<li><strong>Trendy</strong> — online (real-time) / historické</li>
+<li><strong>Recepty</strong> — uložené sady technologických parametrov</li>
+</ul>
+<h3>Alarmy — informácie</h3>
+<ul>
+<li>Dátum a čas vzniku</li>
+<li>Alarmová správa</li>
+<li>Názov a hodnota premennej</li>
+<li>Priorita (severity)</li>
+<li>Operátor ktorý alarm potvrdil</li>
+</ul>
+<p><strong>Stavy alarmu:</strong> aktívny / zaniknutý / potvrdený (ACK)</p>
+<h3>Recepty — operácie</h3>
+<ul>
+<li><strong>Send</strong> — odoslať parametre receptu do PLC</li>
+<li><strong>Snapshot</strong> — načítať aktuálne hodnoty z PLC do receptu</li>
+<li><strong>Save</strong> — uložiť do úložiska HMI</li>
+<li><strong>Delete</strong> — odstrániť</li>
+</ul>
+</div>
+</div>
+
+<div class="section">
+<div class="section-header" onclick="toggleSection(this)"><h2>10. Návrh HMI — ergonómia a farby</h2><span class="toggle">›</span></div>
+<div class="section-body">
+<div class="note">HMI tvorí <strong>50–75 % nákladov</strong> riadiaceho systému.</div>
+<h3>ISO 9241 — ergonómia interakcie</h3>
+<p>Definuje 3 vlastnosti použiteľnosti (usability):</p>
+<ol>
+<li><strong>Účinnosť (effectiveness)</strong> — splní používateľ úlohu?</li>
+<li><strong>Efektívnosť (efficiency)</strong> — rýchlo a s minimom úsilia?</li>
+<li><strong>Spokojnosť (satisfaction)</strong> — prirodzená práca bez stresu?</li>
+</ol>
+<h3>3 kroky práce operátora</h3>
+<ol>
+<li><strong>Detekcia</strong> — zistiť že nastala zmena (farba, blikanie, alarm, zvuk)</li>
+<li><strong>Pochopenie</strong> — interpretovať info (jasné symboly, štandardné farby)</li>
+<li><strong>Reakcia</strong> — vykonať zásah</li>
+</ol>
+<h3>Rozdelenie obrazovky (3 oblasti)</h3>
+<table>
+<tr><th>Časť</th><th>Obsah</th></tr>
+<tr><td>Prehľadová (information area)</td><td>hlavička, čas, alarmy</td></tr>
+<tr><td>Pracovná (work area)</td><td>schéma procesu, trendy</td></tr>
+<tr><td>Ovládacia (control area)</td><td>navigácia, tlačidlá</td></tr>
+</table>
+<p>Prehľadová a ovládacia časť bývajú v <strong>šablóne (template)</strong>.</p>
+<h3>Farby v HMI — IEC 60073</h3>
+<table>
+<tr><th>Farba</th><th>Stav</th><th>Reakcia operátora</th></tr>
+<tr><td>Červená</td><td>Alarm</td><td>Okamžitý zásah</td></tr>
+<tr><td>Žltá</td><td>Varovanie</td><td>Venovať pozornosť</td></tr>
+<tr><td>Žltozelená</td><td>Výstraha</td><td>Zvýšiť pozornosť</td></tr>
+<tr><td>Zelená</td><td>Normálny stav</td><td>Bez zásahu</td></tr>
+<tr><td>Modrá</td><td>Výzva na zásah</td><td>Vykonať akciu</td></tr>
+<tr><td>Biela / sivá</td><td>Neutrálne</td><td>Informácia</td></tr>
+</table>
+<h3>Normy a smernice</h3>
+<ul>
+<li><strong>ISO 9241</strong> — usability, ergonómia</li>
+<li><strong>VDI/VDE 3699</strong> — návrh operátorských obrazoviek</li>
+<li><strong>ISA-101</strong> — moderné HMI (High Performance HMI)</li>
+<li><strong>HMI style guides</strong> — interné štandardy firiem</li>
+</ul>
+</div>
+</div>
+
+<div class="section">
+<div class="section-header" onclick="toggleSection(this)"><h2>11. Hardvér HMI</h2><span class="toggle">›</span></div>
+<div class="section-body">
+<h3>Typy HMI hardvéru</h3>
+<ul>
+<li><strong>Diskrétne ovládacie prvky</strong> — tlačidlá (štart, stop, EMERGENCY), prepínače, joysticky</li>
+<li><strong>Signalizačné prvky</strong> — kontrolky, majáky, signalizačné stĺpiky</li>
+<li><strong>Grafické HMI panely / dotykové displeje</strong></li>
+<li><strong>SCADA operátorské pracoviská</strong> (priemyselné PC)</li>
+</ul>
+<h3>Farby tlačidiel — IEC 60204-1</h3>
+<table>
+<tr><th>Farba</th><th>Význam</th></tr>
+<tr><td>Červená</td><td>Nebezpečenstvo / núdzové zastavenie</td></tr>
+<tr><td>Žltá</td><td>Neobvyklý stav, upozornenie</td></tr>
+<tr><td>Zelená</td><td>Normálny stav, potvrdenie</td></tr>
+<tr><td>Biela</td><td>Všeobecná info, napájanie</td></tr>
+<tr><td>Modrá</td><td>Požiadavka na zásah</td></tr>
+</table>
+<h3>6 faktorov výberu HMI</h3>
+<ol>
+<li><strong>Prevádzkové prostredie</strong> — teplota, vlhkosť, prach, vibrácie, krytie IP, EX, EMI</li>
+<li><strong>Typ aplikácie</strong> — počet obrazoviek, dát, výkon</li>
+<li><strong>Možnosti pripojenia</strong> — Ethernet, USB, Modbus, Profinet, EtherCAT</li>
+<li><strong>Spôsob zadávania údajov</strong> — dotykový / tlačidlá (rukavice!)</li>
+<li><strong>Programovací softvér</strong> — knižnice, kompatibilita</li>
+<li><strong>Ďalšie</strong> — rozšíriteľnosť, podpora výrobcu, cena</li>
+</ol>
+<div class="warn">Najprv overiť technické požiadavky, <strong>potom</strong> porovnávať cenu.</div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-header" onclick="toggleSection(this)"><h2>12. SCADA systémy</h2><span class="toggle">›</span></div>
+<div class="section-body">
+<h3>Definícia</h3>
+<p><strong>SCADA</strong> = Supervisory Control And Data Acquisition. Systém pre dohľad a riadenie <strong>geograficky rozložených procesov</strong> (telecontrol system).</p>
+<p><strong>Aplikácie:</strong> energetické siete, vodárne, ropovody/plynovody, doprava, veľké závody.</p>
+<h3>SCADA vs DCS</h3>
+<table>
+<tr><th></th><th>SCADA</th><th>DCS</th></tr>
+<tr><td>Rozloženie</td><td>geograficky distribuované</td><td>jeden závod</td></tr>
+<tr><td>Riadenie</td><td>cez PLC/RTU na vzdialených miestach</td><td>distribuované riadiace stanice</td></tr>
+<tr><td>Nasadenie</td><td>energetika, vodárne, doprava</td><td>chémia, petrochémia</td></tr>
+</table>
+<h3>Architektúra SCADA</h3>
+<ol>
+<li>Senzory a akčné členy (field level)</li>
+<li>PLC / RTU — lokálne riadenie</li>
+<li>Komunikačná sieť</li>
+<li>SCADA server — agregácia dát</li>
+<li>Historian — historická databáza</li>
+<li>Operátorské pracoviská</li>
+</ol>
+<h3>RTU (Remote Terminal Unit)</h3>
+<p>Zariadenie pre vzdialený zber dát a komunikáciu so SCADA.</p>
+<p><strong>Vlastnosti:</strong> robustná konštrukcia, RTC, zálohované napájanie (UPS/batéria), lokálna pamäť, watchdog, redundantné porty.</p>
+<p><strong>Protokoly:</strong> Modbus, IEC 60870-5-101/104, DNP3, IEC 61850.</p>
+<h3>PLC vs RTU</h3>
+<table>
+<tr><th></th><th>PLC</th><th>RTU</th></tr>
+<tr><td>Použitie</td><td>linka, závod</td><td>geograficky rozložené</td></tr>
+<tr><td>Optimalizácia</td><td>real-time riadenie</td><td>telemetria</td></tr>
+<tr><td>RTC</td><td>externé</td><td>vstavané</td></tr>
+<tr><td>Zálohovanie</td><td>externé UPS</td><td>vstavané (batéria)</td></tr>
+</table>
+<h3>4 generácie SCADA</h3>
+<ol>
+<li><strong>Centralizované</strong> — sálové počítače, proprietárne protokoly</li>
+<li><strong>Distribuované</strong> — LAN, viac staníc</li>
+<li><strong>Sieťové</strong> — TCP/IP, WAN, škálovateľnosť</li>
+<li><strong>Moderné</strong> — Internet, cloud, IoT, otvorené protokoly</li>
+</ol>
+<h3>Redundancia</h3>
+<p>Redundantné servery, databázy (historian), komunikačné trasy, operátorské stanice, UPS napájanie.</p>
+<h3>Distribuovaná architektúra — komponenty</h3>
+<ul>
+<li><strong>I/O server</strong> — komunikácia s PLC/RTU</li>
+<li><strong>Alarm server</strong> — spracovanie alarmov</li>
+<li><strong>Historian server</strong> — archivácia</li>
+<li><strong>SCADA server</strong> — distribúcia dát klientom</li>
+<li><strong>Operátorské stanice</strong></li>
+</ul>
+<h3>Vývoj HMI obrazoviek</h3>
+<ul>
+<li>80. roky: mimic displays s fyzickými tlačidlami</li>
+<li>90. roky: farebné grafické (často preplnené)</li>
+<li>2010+: <strong>High Performance HMI</strong> — minimalistické, prehľadné, farby len pre alarmy</li>
+</ul>
+</div>
+</div>
+
+<div class="section">
+<div class="section-header" onclick="toggleSection(this)"><h2>13. P&ID symbolika — ISO 3511 / ANSI/ISA-5.1</h2><span class="toggle">›</span></div>
+<div class="section-body">
+<p><strong>P&amp;ID</strong> = Piping and Instrumentation Diagram. Hlavné normy:</p>
+<ul>
+<li><strong>ISO 3511</strong> (Európa)</li>
+<li><strong>ANSI/ISA-5.1</strong> (USA, procesný/petro priemysel)</li>
+</ul>
+<h3>Základná značka prístroja</h3>
+<p>Kružnica (~10 mm) s písmenkovým kódom.</p>
+<p><strong>Umiestnenie:</strong></p>
+<ul>
+<li>Bez čiary — v technológii (field)</li>
+<li>1 čiara — dostupný operátorovi (panel, HMI)</li>
+<li>2 čiary — pomocný panel / za panelom</li>
+</ul>
+<h3>Štruktúra písmenkového kódu</h3>
+<ol>
+<li><strong>1. písmeno</strong> — veličina (T, P, F, L...)</li>
+<li><strong>2. písmeno (voliteľné)</strong> — dodatok (D, F, J, Q)</li>
+<li><strong>Ďalšie písmená</strong> — funkcia (poradie I-R-C-T-Q-S-Z-A)</li>
+</ol>
+<h3>1. písmeno — veličina</h3>
+<table>
+<tr><th>Pís.</th><th>Anglicky</th><th>Význam</th></tr>
+<tr><td><strong>T</strong></td><td>Temperature</td><td>teplota</td></tr>
+<tr><td><strong>P</strong></td><td>Pressure</td><td>tlak</td></tr>
+<tr><td><strong>F</strong></td><td>Flow</td><td>prietok</td></tr>
+<tr><td><strong>L</strong></td><td>Level</td><td>hladina</td></tr>
+<tr><td><strong>S</strong></td><td>Speed</td><td>rýchlosť</td></tr>
+<tr><td><strong>Q</strong></td><td>Quality</td><td>kvalita (pH, vodivosť)</td></tr>
+<tr><td><strong>G</strong></td><td>Gauging</td><td>poloha, rozmer</td></tr>
+<tr><td><strong>U</strong></td><td>Multivariable</td><td>viacero veličín</td></tr>
+</table>
+<h3>Funkčné písmená</h3>
+<table>
+<tr><th>Pís.</th><th>Anglicky</th><th>Význam</th></tr>
+<tr><td><strong>I</strong></td><td>Indicator</td><td>indikácia</td></tr>
+<tr><td><strong>R</strong></td><td>Recorder</td><td>zapisovač</td></tr>
+<tr><td><strong>C</strong></td><td>Controller</td><td>regulátor</td></tr>
+<tr><td><strong>T</strong></td><td>Transmitter</td><td>prevodník</td></tr>
+<tr><td><strong>Q</strong></td><td>Integrator/Totalizer</td><td>sumácia</td></tr>
+<tr><td><strong>S</strong></td><td>Switch</td><td>spínač</td></tr>
+<tr><td><strong>Z</strong></td><td>Position</td><td>poloha</td></tr>
+<tr><td><strong>A</strong></td><td>Alarm</td><td>signalizácia</td></tr>
+<tr><td><strong>B</strong></td><td>Binary</td><td>binárny stav</td></tr>
+</table>
+<h3>Dodatky (2. písmeno)</h3>
+<ul>
+<li><strong>D</strong> — Difference (rozdiel)</li>
+<li><strong>F</strong> — Ratio (pomer)</li>
+<li><strong>J</strong> — Scan (snímanie)</li>
+<li><strong>Q</strong> — Integrate/Totalize</li>
+</ul>
+<h3>Príklady čítania značiek</h3>
+<table>
+<tr><th>Kód</th><th>Význam</th></tr>
+<tr><td><strong>TIC</strong></td><td>Temperature Indicator Controller — indikácia + regulácia teploty</td></tr>
+<tr><td><strong>TDC</strong></td><td>Temperature Difference Controller — diferencia teploty</td></tr>
+<tr><td><strong>FRC</strong></td><td>Flow Recorder Controller — zápis + regulácia prietoku</td></tr>
+<tr><td><strong>FRQ</strong></td><td>Flow Recorder + Totalize — zápis a sumácia prietoku</td></tr>
+<tr><td><strong>PA<sup>H</sup></strong></td><td>Pressure Alarm High — alarm hornej medze tlaku</td></tr>
+<tr><td><strong>LCA</strong></td><td>Level Controller Alarm</td></tr>
+<tr><td><strong>LIT</strong></td><td>Level Indicator Transmitter</td></tr>
+<tr><td><strong>PDR</strong></td><td>Pressure Difference Recorder</td></tr>
+<tr><td><strong>QRC</strong></td><td>Quality (pH) Recorder Controller</td></tr>
+<tr><td><strong>FFC</strong></td><td>Flow + Ratio Controller — pomerová regulácia</td></tr>
+<tr><td><strong>HS</strong></td><td>Hand Switch — ručné ovládanie</td></tr>
+</table>
+<h3>Symboly v schéme</h3>
+<ul>
+<li><strong>Hrubá čiara</strong> — technologické zariadenia / potrubie</li>
+<li><strong>Tenká čiara</strong> — pripojenie snímača / signál</li>
+<li><strong>Bodka</strong> na križovaní = spojenie; bez bodky = len križujú sa</li>
+<li><strong>Trojuholník</strong> — korekčný člen</li>
+<li><strong>Motýlik (kosoštvorec)</strong> — regulačný ventil</li>
+<li><strong>Šesťhran</strong> — riadiaci počítač (PLC/DCS)</li>
+<li><strong>Štvorec s kruhom</strong> — zdieľané zobrazenie/riadenie (DCS, SCADA HMI)</li>
+</ul>
+<h3>Správanie ventilu pri výpadku</h3>
+<ul>
+<li>Šípka <strong>nahor</strong> = fail OPEN (otvorí)</li>
+<li>Šípka <strong>nadol</strong> = fail CLOSE (zatvorí)</li>
+<li><strong>Dve čiarky</strong> = fail FREEZE (zostane v polohe)</li>
+</ul>
+<h3>Typy ventilov</h3>
+<ul>
+<li><strong>Gate valve (šupátkový)</strong> — len úplne OTV / ZATV, nie na reguláciu</li>
+<li><strong>Globe valve (sedlový)</strong> — plynulá regulácia prietoku</li>
+</ul>
+<h3>Druhy signálov</h3>
+<ul>
+<li><strong>Elektrický</strong> — čiarky cez čiaru</li>
+<li><strong>Pneumatický</strong> — šípka</li>
+<li><strong>Hydraulický</strong> — vlnka / "L"</li>
+</ul>
+</div>
+</div>
+
+<div class="section">
+<div class="section-header" onclick="toggleSection(this)"><h2>14. Prehľad noriem</h2><span class="toggle">›</span></div>
+<div class="section-body">
+<table>
+<tr><th>Norma</th><th>Predmet</th></tr>
+<tr><td><strong>ISO 9241</strong></td><td>Ergonómia interakcie človek–počítač (usability)</td></tr>
+<tr><td><strong>IEC 60073</strong></td><td>Farebné kódovanie HMI obrazoviek</td></tr>
+<tr><td><strong>IEC 60204-1</strong></td><td>Bezpečnosť strojov — farby tlačidiel a signalizácie</td></tr>
+<tr><td><strong>VDI/VDE 3699</strong></td><td>Návrh operátorských obrazoviek</td></tr>
+<tr><td><strong>ISA-101</strong></td><td>Moderné HMI (High Performance HMI)</td></tr>
+<tr><td><strong>ISO 3511</strong></td><td>Symbolika MaR (EU)</td></tr>
+<tr><td><strong>ANSI/ISA-5.1</strong></td><td>Symbolika MaR (US)</td></tr>
+<tr><td><strong>DIN 2403</strong></td><td>Farby potrubí podľa média</td></tr>
+<tr><td><strong>IEC 60870-5-101/104, DNP3, IEC 61850</strong></td><td>Komunikačné protokoly SCADA</td></tr>
+<tr><td><strong>IEC 61131</strong></td><td>Programovanie PLC</td></tr>
+</table>
+</div>
+</div>
+
+</div>
+</div>
+
+<!-- KARTICKY -->
+<div id="karticky" class="tab-content">
+<div class="flashcard-controls">
+    <select class="filter-select" id="category-filter" onchange="filterCards()">
+        <option value="all">Všetky kategórie</option>
+        <option value="DB-zaklady">DB: Základy a kľúče</option>
+        <option value="ERA">DB: ERA a kardinalita</option>
+        <option value="NF">DB: Normalizácia</option>
+        <option value="SQL">DB: SQL</option>
+        <option value="ACID">DB: Transakcie, trigger, procedure</option>
+        <option value="Mongo">DB: MongoDB</option>
+        <option value="HMI">VIZ: HMI základy</option>
+        <option value="HMI-design">VIZ: Návrh HMI</option>
+        <option value="HW">VIZ: Hardvér</option>
+        <option value="SCADA">VIZ: SCADA</option>
+        <option value="PID">VIZ: P&amp;ID značky</option>
+        <option value="kombi">Kombinované otázky</option>
+    </select>
+    <div class="progress-info" id="progress-info">Karta 1 z X</div>
+    <button class="btn btn-secondary" onclick="resetProgress()">Reštart</button>
+</div>
+<div id="flashcard-container"></div>
+</div>
+
+<!-- SKUSKA -->
+<div id="skuska" class="tab-content">
+<p style="color: var(--text-dim); margin-bottom: 16px;">Možné skúšobné otázky s modelovými odpoveďami. Klikni na otázku pre rozbalenie odpovede.</p>
+
+<div class="exam-category">Databázy — možné skúšobné otázky</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q1.</span><span class="q-text">Vysvetlite pojem normalizácia, prečo sa robí a aké sú jej formy do 3NF.</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p><strong>Normalizácia</strong> je proces efektívnej organizácie údajov v databáze. Cieľmi sú: eliminácia redundancie, zabezpečenie integrity dát, vyhnutie sa anomáliám (vkladania, aktualizácie, mazania).</p>
+<p><strong>Bezstratová dekompozícia</strong> = pri spätnom spojení rozdelených tabuliek sa nesmú stratiť žiadne údaje.</p>
+<p><strong>1NF</strong>: tabuľka má PK, každý atribút obsahuje atomické hodnoty, žiadne opakujúce sa atribúty.</p>
+<p><strong>2NF</strong>: je v 1NF + každý nekľúčový atribút úplne funkčne závisí od CELÉHO PK (problém vzniká pri zložených PK).</p>
+<p><strong>3NF</strong>: je v 2NF + žiaden nekľúčový atribút nie je tranzitívne závislý od PK.</p>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q2.</span><span class="q-text">Aké sú typy databázových kľúčov? Definujte aspoň 5.</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<ul>
+<li><strong>Primary key (PK)</strong> — jednoznačne identifikuje riadok, neopakujúce sa hodnoty, NEsmie obsahovať NULL.</li>
+<li><strong>Foreign key (FK/CK)</strong> — stĺpec(ce) odkazujúce na PK/UNIQUE inej tabuľky, vytvára relácie, zabezpečuje referenčnú integritu.</li>
+<li><strong>Candidate key</strong> — minimálna množina atribútov ktorá jednoznačne identifikuje riadky. Z kandidátnych kľúčov je vybraný jeden ako PK.</li>
+<li><strong>Superkey</strong> — množina atribútov ktorá identifikuje riadky (nemusí byť minimálna).</li>
+<li><strong>Alternate key</strong> — kandidátny kľúč ktorý NEbol zvolený za PK. Jedinečnosť cez UNIQUE.</li>
+<li><strong>Surrogate key</strong> — umelo vytvorený identifikátor bez vlastného významu (napr. AUTO_INCREMENT id).</li>
+<li><strong>Natural key</strong> — kľúč z reálnych atribútov entity (napr. rodné číslo).</li>
+<li><strong>Composite key</strong> — kľúč tvorený kombináciou viacerých stĺpcov.</li>
+<li><strong>Intelligent key</strong> — kľúč ktorého jednotlivé časti nesú vlastný význam.</li>
+</ul>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q3.</span><span class="q-text">Mám tabuľku Studenti(rc, meno, mesto, PSC, hobby1, hobby2, hobby3). V akej je NF a ako by ste ju normalizovali do 3NF?</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p><strong>Aktuálny stav: nie je v 1NF</strong> — tabuľka má opakujúce sa atribúty (hobby1, hobby2, hobby3).</p>
+<p><strong>Krok 1 — do 1NF:</strong> oddeliť koníčky do samostatnej tabuľky a vytvoriť PK:</p>
+<pre><code>Studenti(rc PK, meno, mesto, PSC)
+StudentHobby(id PK, rc FK, hobby)</code></pre>
+<p><strong>Krok 2 — do 2NF:</strong> 2NF je už splnená — tabuľka má jednoduchý PK, takže nekľúčové atribúty nemôžu závisieť len od časti PK.</p>
+<p><strong>Krok 3 — do 3NF:</strong> v tabuľke Studenti existuje tranzitívna závislosť <code>rc → mesto → PSC</code>. Oddelíme:</p>
+<pre><code>Studenti(rc PK, meno, mesto_id FK)
+Mesto(mesto_id PK, mesto, PSC)
+StudentHobby(id PK, rc FK, hobby)</code></pre>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q4.</span><span class="q-text">Vysvetlite pojem ACID v transakciách.</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<ul>
+<li><strong>Atomicity (atomickosť)</strong> — transakcia sa vykoná buď celá alebo vôbec. Ak zlyhá v polovici, urobí sa ROLLBACK.</li>
+<li><strong>Consistency (konzistencia)</strong> — transakcia prevedie DB z jedného konzistentného stavu do druhého. Dodržiavajú sa všetky constrainty.</li>
+<li><strong>Isolation (izolácia)</strong> — paralelne bežiace transakcie sa neovplyvňujú. Implementuje sa pomocou izolačných úrovní a zámkov.</li>
+<li><strong>Durability (trvácnosť)</strong> — po úspešnom COMMIT-e zmeny trvajú aj v prípade výpadku systému (zápis na disk).</li>
+</ul>
+<p>Príkazy: <code>START TRANSACTION</code> / <code>COMMIT</code> / <code>ROLLBACK</code>.</p>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q5.</span><span class="q-text">Aký je rozdiel medzi WHERE a HAVING v SQL?</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p><strong>WHERE</strong> filtruje jednotlivé riadky <strong>pred</strong> zoskupením (GROUP BY). Nemôže obsahovať agregačné funkcie.</p>
+<p><strong>HAVING</strong> filtruje skupiny <strong>po</strong> GROUP BY. Môže obsahovať agregačné funkcie (COUNT, SUM, AVG...).</p>
+<pre><code>SELECT id_oddelenie, AVG(plat) AS priemer
+FROM Zamestnanci
+WHERE plat &gt; 500          -- filter na riadky
+GROUP BY id_oddelenie
+HAVING AVG(plat) &gt; 1000;   -- filter na skupiny</code></pre>
+<p>Logické poradie: FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT.</p>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q6.</span><span class="q-text">Vysvetlite rozdiel medzi INNER, LEFT, RIGHT a CROSS JOIN.</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<ul>
+<li><strong>INNER JOIN</strong> — vráti iba riadky, ktoré majú zhodu v OBOCH tabuľkách.</li>
+<li><strong>LEFT JOIN</strong> (LEFT OUTER) — vráti VŠETKO z ľavej tabuľky + zhody z pravej. Chýbajúce hodnoty z pravej sú NULL.</li>
+<li><strong>RIGHT JOIN</strong> — vráti všetko z pravej + zhody z ľavej.</li>
+<li><strong>CROSS JOIN</strong> — kartézsky súčin: každý riadok ľavej tabuľky s každým riadkom pravej (počet riadkov = m × n).</li>
+</ul>
+<pre><code>SELECT z.meno, o.nazov
+FROM Zamestnanci z
+LEFT JOIN Oddelenia o ON z.id_oddelenie = o.id;</code></pre>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q7.</span><span class="q-text">Čo je VIEW, na čo slúži a v čom sa líši od tabuľky?</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p><strong>VIEW (pohľad)</strong> je virtuálna tabuľka definovaná SELECT dopytom. Nemá vlastné fyzické dáta — pri každom dopyte sa vyhodnotí definícia.</p>
+<p><strong>Výhody:</strong> zjednodušuje opakované zložité dotazy, skrýva komplexnosť pred používateľmi, zvyšuje bezpečnosť (môžem dať prístup len k view bez prístupu k tabuľke).</p>
+<pre><code>CREATE VIEW v_top_platy AS
+SELECT meno, plat FROM Zamestnanci WHERE plat &gt; 2000;
+
+SELECT * FROM v_top_platy; -- ako z tabuľky
+DROP VIEW v_top_platy;</code></pre>
+<p>Hlavný rozdiel od tabuľky: view neukladá dáta, je len uloženým dopytom.</p>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q8.</span><span class="q-text">Vysvetlite pojem INDEX, jeho výhody a nevýhody.</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p><strong>INDEX</strong> je dátová štruktúra (typicky B-strom) ktorá zrýchľuje vyhľadávanie v tabuľke.</p>
+<p><strong>Výhody:</strong></p>
+<ul>
+<li>Zrýchľuje SELECT, WHERE, ORDER BY, JOIN na indexovaných stĺpcoch.</li>
+<li>UNIQUE index vynucuje jedinečnosť.</li>
+<li>PK má automaticky unique index.</li>
+</ul>
+<p><strong>Nevýhody:</strong></p>
+<ul>
+<li>Spomaľuje INSERT/UPDATE/DELETE (musí sa aktualizovať aj index).</li>
+<li>Zaberá miesto na disku.</li>
+</ul>
+<pre><code>CREATE INDEX idx_meno ON Zamestnanci(meno);
+CREATE UNIQUE INDEX idx_email ON Zamestnanci(email);
+DROP INDEX idx_meno ON Zamestnanci;</code></pre>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q9.</span><span class="q-text">Vysvetlite kardinalitu vzťahov a ako sa rieši M:N v relačnej databáze.</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p><strong>Kardinalita</strong> určuje maximálny počet výskytov objektov jednej entity priradených k druhej.</p>
+<ul>
+<li><strong>1:1</strong> — každej entite zodpovedá najviac jedna entita na druhej strane (osoba↔občiansky preukaz). V DB: jedna tabuľka alebo FK s UNIQUE.</li>
+<li><strong>1:N</strong> — jednému riadku v prvej tabuľke zodpovedá viacero v druhej, ale jednému v druhej len jeden v prvej (čitateľ↔knihy). V DB: <strong>FK na strane "N"</strong>.</li>
+<li><strong>M:N</strong> — viacerým v prvej zodpovedá viacero v druhej a opačne (študent↔predmety, film↔herci).</li>
+</ul>
+<p><strong>Riešenie M:N:</strong> nedá sa uložiť priamo medzi dvomi tabuľkami. Vytvorí sa <strong>prepojovacia (väzobná) tabuľka</strong> s dvoma FK na obe entity.</p>
+<pre><code>Studenti(id PK, meno)
+Predmety(id PK, nazov)
+StudentPredmet(id_student FK, id_predmet FK, znamka,
+    PRIMARY KEY(id_student, id_predmet))</code></pre>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q10.</span><span class="q-text">Čo je TRIGGER a ako sa používa? Daj príklad.</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p><strong>TRIGGER (spúšťač)</strong> je procedúra automaticky spustená DBMS pri INSERT/UPDATE/DELETE na tabuľke.</p>
+<p><strong>Časy spustenia:</strong> BEFORE / AFTER.<br>
+<strong>Udalosti:</strong> INSERT / UPDATE / DELETE.<br>
+<strong>Pseudo-tabuľky:</strong> <code>NEW</code> (nová hodnota), <code>OLD</code> (pôvodná hodnota).</p>
+<p>Príklad — automatické nastavenie dátumu vytvorenia:</p>
+<pre><code>CREATE TRIGGER pred_insert
+BEFORE INSERT ON Zamestnanci
+FOR EACH ROW
+SET NEW.datum_vytvorenia = NOW();</code></pre>
+<p>Príklad — log zmien platov:</p>
+<pre><code>CREATE TRIGGER log_plat
+AFTER UPDATE ON Zamestnanci
+FOR EACH ROW
+INSERT INTO PlatLog(id_zam, stary_plat, novy_plat, datum)
+VALUES (OLD.id, OLD.plat, NEW.plat, NOW());</code></pre>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q11.</span><span class="q-text">Aké sú anomálie pri zlej štruktúre databázy?</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p>Pri zle navrhnutej DB s duplicitnými údajmi môžu vznikať <strong>3 typy anomálií</strong>:</p>
+<ul>
+<li><strong>Anomália vkladania</strong> — nemožno evidovať jednu entitu bez druhej. Napr. nemôžem evidovať nový internát, kým nemám aspoň jedného študenta v ňom.</li>
+<li><strong>Anomália aktualizácie</strong> — zmena údaja musí byť vykonaná vo všetkých riadkoch. Ak sa niektorý riadok neaktualizuje, vzniká nekonzistencia.</li>
+<li><strong>Anomália mazania</strong> — vymazaním záznamu stratím aj iné informácie. Napr. zmazaním posledného študenta na internáte stratím aj informáciu o telefónnom čísle internátu.</li>
+</ul>
+<p>Riešením je <strong>normalizácia</strong> — rozdelenie do viacerých tabuliek prepojených cez FK.</p>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q12.</span><span class="q-text">Rozdiel medzi MongoDB a relačnou databázou.</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<table>
+<tr><th>SQL (relačná)</th><th>MongoDB (dokumentová)</th></tr>
+<tr><td>Tabuľky</td><td>Kolekcie</td></tr>
+<tr><td>Riadky</td><td>Dokumenty (BSON)</td></tr>
+<tr><td>Stĺpce</td><td>Polia</td></tr>
+<tr><td>Pevná schéma</td><td>Bez pevnej schémy</td></tr>
+<tr><td>JOIN</td><td>$lookup / vnorené dokumenty</td></tr>
+<tr><td>PK</td><td>_id (ObjectId)</td></tr>
+<tr><td>ACID transakcie</td><td>Slabšie (eventual consistency)</td></tr>
+<tr><td>Vertikálne škálovanie</td><td>Horizontálne škálovanie (sharding)</td></tr>
+</table>
+<p><strong>Použitie SQL:</strong> štruktúrované dáta s jasnou schémou, transakcie, klasické aplikácie.</p>
+<p><strong>Použitie MongoDB:</strong> veľké objemy nezosúladených dát, JSON dáta, IoT, real-time analytika.</p>
+</div>
+</div>
+
+<div class="exam-category">Vizualizácia — možné skúšobné otázky</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q13.</span><span class="q-text">Aké sú hlavné úlohy vizualizácie v priemyselných riadiacich systémoch?</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p>Vizualizácia (HMI/SCADA) predstavuje rozhranie medzi riadiacim systémom a človekom. Úlohy:</p>
+<ul>
+<li><strong>Monitoring procesu</strong> — prehľadné zobrazenie stavu zariadení a meraných veličín v reálnom čase.</li>
+<li><strong>Ovládanie procesu</strong> — nastavovanie parametrov, žiadaných hodnôt, štart/stop, AUTO/MAN režimy.</li>
+<li><strong>Signalizácia porúch / alarmy</strong> — upozornenia na neštandardné stavy.</li>
+<li><strong>Diagnostika a údržba</strong> — informácie o stave zariadení a komunikácie.</li>
+<li><strong>Archivácia dát</strong> — záznam histórie pre analýzu a diagnostiku.</li>
+<li><strong>Trendy</strong> — sledovanie vývoja veličín v čase.</li>
+</ul>
+<p>Vizualizácia premieňa interné dáta riadiaceho systému na informácie zrozumiteľné pre človeka.</p>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q14.</span><span class="q-text">Vymenuj a popíš základné stavebné prvky HMI projektu.</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<ul>
+<li><strong>Premenné (tags)</strong> — reprezentujú procesné veličiny a stavy. Externé (z PLC) alebo interné (len HMI).</li>
+<li><strong>Obrazovky</strong> — Base (technologická), Master/Template (spoločné prvky — hlavička, navigácia), Popup (pomocné okná pre ovládanie).</li>
+<li><strong>Grafické objekty</strong> — texty, číselné zobrazenia, tlačidlá, indikátory, grafické symboly (motory, ventily, nádrže), animácie.</li>
+<li><strong>Alarmy</strong> — binárne (diskrétny stav) alebo analógové (prekročenie limitov HI, LO, HIHI, LOLO).</li>
+<li><strong>Trendy</strong> — online (real-time) alebo historické (archivované).</li>
+<li><strong>Recepty</strong> — uložené sady technologických parametrov pre konkrétny výrobok.</li>
+<li><strong>Používateľské prístupy</strong> — rôzne úrovne oprávnení.</li>
+<li><strong>Jazykové verzie</strong>.</li>
+</ul>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q15.</span><span class="q-text">Vysvetlite rozdiel medzi HMI, SCADA a DCS.</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p><strong>HMI (Human-Machine Interface)</strong> — rozhranie medzi človekom a strojom. Lokálne ovládanie a monitoring jedného zariadenia alebo výrobnej linky (operátorský panel, dotykový displej).</p>
+<p><strong>SCADA (Supervisory Control And Data Acquisition)</strong> — systém pre dohľad a riadenie <strong>geograficky rozložených procesov</strong> (telecontrol). Centrálne monitorovanie distribuovaných zariadení (vodárne, ropovody, energetické siete, doprava). Komunikuje s PLC/RTU cez WAN.</p>
+<p><strong>DCS (Distributed Control System)</strong> — systém pre riadenie technologických procesov <strong>v rámci jedného závodu</strong>. Distribuované riadenie realizované priamo v riadiacich staniciach systému. Typické pre chémiu, petrochémiu, energetické bloky.</p>
+<p>Hlavný rozdiel: HMI je lokálne, SCADA je rozsiahla a geograficky distribuovaná, DCS je integrovaná v jednom závode.</p>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q16.</span><span class="q-text">Aké sú vlastnosti RTU a v čom sa líši od PLC?</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p><strong>RTU (Remote Terminal Unit)</strong> je zariadenie pre zber dát z technologického procesu a komunikáciu so SCADA systémom.</p>
+<p><strong>Funkcie RTU:</strong> pripojenie senzorov/akčných členov, zber a spracovanie údajov, prenos do SCADA, prijímanie povelov. RTU môže vykonávať aj lokálne riadenie.</p>
+<p><strong>Vlastnosti RTU:</strong></p>
+<ul>
+<li>Robustná konštrukcia, odolnosť voči teplote a vlhkosti</li>
+<li>Hodiny reálneho času (RTC) pre časové značky údajov</li>
+<li>Zálohované napájanie (UPS/batéria)</li>
+<li>Lokálna pamäť pre prípad výpadku komunikácie</li>
+<li>Watchdog (automatický reštart pri chybe)</li>
+<li>Redundantné komunikačné porty</li>
+<li>Protokoly: Modbus, IEC 60870-5-101/104, DNP3, IEC 61850</li>
+</ul>
+<p><strong>Rozdiel od PLC:</strong> PLC je optimalizované pre rýchle real-time riadenie v rámci závodu. RTU je optimalizované pre <strong>telemetriu</strong> a vzdialené geograficky rozložené aplikácie, má vstavané RTC a zálohované napájanie.</p>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q17.</span><span class="q-text">Vysvetlite 3 vlastnosti použiteľnosti podľa ISO 9241.</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p>Norma <strong>ISO 9241</strong> sa zaoberá ergonómiou interakcie človek-počítač. Definuje tri vlastnosti použiteľnosti (usability):</p>
+<ul>
+<li><strong>Účinnosť (effectiveness)</strong> — dokáže používateľ pomocou systému splniť požadovanú úlohu? Ide o správnosť a úplnosť splnenia cieľa.</li>
+<li><strong>Efektívnosť (efficiency)</strong> — dokáže používateľ vykonať úlohu rýchlo a s minimálnym úsilím alebo chybami? Vzťah medzi výsledkom a vynaloženou energiou/časom.</li>
+<li><strong>Spokojnosť (satisfaction)</strong> — je práca so systémom prirodzená, prehľadná a bez zbytočného stresu?</li>
+</ul>
+<p>Cieľom návrhu HMI je vytvoriť rozhranie, ktoré umožní operátorovi pracovať <strong>správne, rýchlo a s minimálnym úsilím</strong>.</p>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q18.</span><span class="q-text">Aké sú farby v HMI podľa IEC 60073 a ich význam?</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<table>
+<tr><th>Farba</th><th>Stav</th><th>Reakcia operátora</th></tr>
+<tr><td>Červená</td><td>Alarm, naliehavý stav</td><td>Okamžitý zásah</td></tr>
+<tr><td>Žltá</td><td>Varovanie, odchýlka od normálu</td><td>Venovať pozornosť</td></tr>
+<tr><td>Žltozelená</td><td>Výstraha, zvýšené riziko</td><td>Zvýšiť pozornosť</td></tr>
+<tr><td>Zelená</td><td>Normálny stav, správna prevádzka</td><td>Bez zásahu</td></tr>
+<tr><td>Modrá</td><td>Výzva na zásah</td><td>Vykonať akciu</td></tr>
+<tr><td>Biela / sivá</td><td>Neutrálne, info</td><td>—</td></tr>
+</table>
+<p>Farby umožňujú operátorovi rýchlo identifikovať závažnosť situácie. Použitie musí byť <strong>konzistentné</strong> v celom systéme. Pre hardvérové tlačidlá platí norma <strong>IEC 60204-1</strong> s podobnými farbami.</p>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q19.</span><span class="q-text">Aké sú faktory výberu HMI zariadenia?</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<ol>
+<li><strong>Prevádzkové prostredie</strong> — teplota, vlhkosť, prach, voda, vibrácie, krytie IP, EX prostredie (výbušné), elektromagnetické rušenie (EMI).</li>
+<li><strong>Typ aplikácie a požiadavky používateľa</strong> — počet zobrazovaných veličín, trendy, archivácia, počet obrazoviek, výkon, veľkosť pamäte.</li>
+<li><strong>Možnosti pripojenia</strong> — fyzické rozhrania (Ethernet, USB, SUB-D9/25), komunikačné protokoly (Modbus, Modbus TCP/IP, Profinet, EtherCAT), kompatibilita s riadiacim systémom.</li>
+<li><strong>Spôsob zadávania údajov</strong> — dotykový displej / fyzické tlačidlá / kombinácia. Operátor v rukaviciach potrebuje fyzické tlačidlá alebo špeciálny dotykový displej.</li>
+<li><strong>Programovací softvér</strong> — proprietárny vs otvorený, dostupnosť knižníc (tlačidlá, bargrafy, trendy, alarmové okná), kompatibilita s hardvérom.</li>
+<li><strong>Ďalšie hľadiská</strong> — rozšíriteľnosť, technická podpora výrobcu, dokumentácia, cena.</li>
+</ol>
+<p><strong>Postup:</strong> najprv overiť, či zariadenie spĺňa technické požiadavky, až potom porovnávať cenu.</p>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q20.</span><span class="q-text">Prečítaj a vysvetli značky: TIC, FRC, LCA, PDR, FT, FFC.</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p>Štruktúra: 1. písmeno = veličina, ďalšie písmená = funkcie (poradie I-R-C-T-Q-S-Z-A).</p>
+<table>
+<tr><th>Kód</th><th>Rozklad</th><th>Význam</th></tr>
+<tr><td><strong>TIC</strong></td><td>T+I+C</td><td>Temperature Indicator Controller — indikácia + regulácia teploty</td></tr>
+<tr><td><strong>FRC</strong></td><td>F+R+C</td><td>Flow Recorder Controller — zapisovanie + regulácia prietoku</td></tr>
+<tr><td><strong>LCA</strong></td><td>L+C+A</td><td>Level Controller Alarm — regulácia hladiny so signalizáciou</td></tr>
+<tr><td><strong>PDR</strong></td><td>P+D(dodatok)+R</td><td>Pressure Difference Recorder — zápis diferencie tlaku</td></tr>
+<tr><td><strong>FT</strong></td><td>F+T</td><td>Flow Transmitter — prevodník prietoku (snímač s elektrickým výstupom)</td></tr>
+<tr><td><strong>FFC</strong></td><td>F+F(dodatok)+C</td><td>Flow + Ratio Controller — pomerová regulácia prietoku</td></tr>
+</table>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q21.</span><span class="q-text">Aké sú typy alarmov v HMI a aké informácie sa pri alarme zobrazujú?</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p><strong>Typy alarmov:</strong></p>
+<ul>
+<li><strong>Binárne alarmy</strong> — viazané na diskrétne stavy (porucha motora, ventil zatvorený, hladina mimo rozsahu).</li>
+<li><strong>Analógové alarmy</strong> — prekročenie definovaných limitov hodnoty: HI, LO, HIHI, LOLO.</li>
+</ul>
+<p><strong>Informácie zobrazované pri alarme:</strong></p>
+<ul>
+<li>Dátum a čas vzniku alarmu</li>
+<li>Alarmová správa (popis)</li>
+<li>Názov a aktuálna hodnota premennej, ktorá alarm aktivuje</li>
+<li>Priorita alarmu (severity)</li>
+<li>Operátor, ktorý alarm potvrdil</li>
+</ul>
+<p><strong>Stavy alarmu:</strong> aktívny (porucha trvá) / zaniknutý (podmienka už neplatí) / potvrdený (ACK — operátor ho potvrdil).</p>
+<p>Alarmy sa zvyčajne archivujú pre neskoršiu analýzu.</p>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q22.</span><span class="q-text">Vysvetli 4 generácie SCADA systémov.</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<ol>
+<li><strong>1. generácia — Centralizované SCADA</strong>: realizované na veľkých sálových počítačoch, proprietárne komunikačné protokoly, systémy neboli prepojené s inými sieťami.</li>
+<li><strong>2. generácia — Distribuované SCADA</strong>: spracovanie dát rozdelené medzi viacero staníc, komunikácia cez lokálne siete (LAN), stále prevažne proprietárne protokoly.</li>
+<li><strong>3. generácia — Sieťové SCADA</strong>: využitie štandardných sieťových technológií (TCP/IP), prepojenie cez LAN a WAN siete, lepšia škálovateľnosť veľkých systémov.</li>
+<li><strong>4. generácia — Moderné SCADA</strong>: využitie internetu, cloudových služieb a IoT, otvorené komunikačné protokoly, integrácia s databázami a analytickými nástrojmi.</li>
+</ol>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q23.</span><span class="q-text">Vysvetli rozdiel medzi gate valve a globe valve a čo znamenajú symboly fail open / fail close.</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p><strong>Gate valve (šupátkový ventil)</strong> — slúži najmä na úplné otvorenie alebo úplné uzavretie prietoku. <strong>Nie je vhodný na reguláciu</strong>. V schéme je značený motýlikom bez bodky.</p>
+<p><strong>Globe valve (sedlový ventil)</strong> — umožňuje <strong>plynulú reguláciu prietoku</strong>. Používa sa v regulačných slučkách. V schéme je motýlik s bodkou v strede.</p>
+<p><strong>Správanie ventilu pri výpadku energie alebo signálu:</strong></p>
+<ul>
+<li><strong>Šípka nahor (fail open)</strong> — pri výpadku ventil otvorí. Používa sa napr. pri bezpečnostných ventiloch, kde sa nesmie zabrániť úniku tlaku.</li>
+<li><strong>Šípka nadol (fail close)</strong> — pri výpadku ventil zatvorí. Používa sa napr. pri dávkovaní nebezpečných látok.</li>
+<li><strong>Dve čiarky (fail freeze / fail in place)</strong> — pri výpadku ventil zostane v aktuálnej polohe.</li>
+</ul>
+<p>Voľba správania je dôležitá z hľadiska bezpečnosti technologického procesu.</p>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q24.</span><span class="q-text">Aké sú formy redundancie v SCADA systéme?</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p><strong>Redundancia</strong> = systém obsahuje záložné komponenty, ktoré môžu prevziať funkciu pri zlyhaní primárnej časti. Zvyšuje dostupnosť a spoľahlivosť systému.</p>
+<p>Typické formy redundancie v SCADA:</p>
+<ul>
+<li><strong>Redundantné SCADA servery</strong> — záložný server preberá funkciu pri výpadku hlavného (active/standby).</li>
+<li><strong>Redundantná databáza (historian)</strong> — zabezpečenie dostupnosti historických dát.</li>
+<li><strong>Redundantná komunikačná sieť</strong> — viacero komunikačných trás medzi zariadeniami.</li>
+<li><strong>Redundantné operátorské pracoviská</strong> — viacero operátorských staníc na sledovanie procesu.</li>
+<li><strong>Zálohované napájanie</strong> — UPS, dieselgenerátory.</li>
+</ul>
+<p>Redundancia je kľúčová najmä v kritických infraštruktúrach (energetika, vodárne, doprava).</p>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q25.</span><span class="q-text">Vysvetli rozdelenie HMI obrazovky na 3 oblasti.</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p>Typické rozdelenie HMI obrazovky podľa odporúčaní VDI/VDE 3699 a ISA-101:</p>
+<ol>
+<li><strong>Prehľadová časť (information area)</strong> — typicky hore. Obsahuje:
+<ul><li>názov obrazovky, čas, stav systému</li><li>systémové a procesné hlásenia</li><li>často zobrazenie posledných alarmov</li></ul>
+</li>
+<li><strong>Pracovná časť (work area)</strong> — stred obrazovky. Hlavná oblasť s:
+<ul><li>technologickou schémou</li><li>zariadeniami, veličinami, stavmi</li><li>alarmovými/trendovými/receptovými oknami</li></ul>
+</li>
+<li><strong>Ovládacia časť (control area)</strong> — typicky dole. Obsahuje:
+<ul><li>navigáciu medzi obrazovkami</li><li>ovládacie tlačidlá alebo menu systému</li></ul>
+</li>
+</ol>
+<p>Prehľadová a ovládacia časť bývajú definované v <strong>šablóne (template/master panel)</strong>, ktorá je spoločná pre všetky obrazovky. Pracovná časť sa mení podľa aktuálnej obrazovky.</p>
+</div>
+</div>
+
+<div class="exam-category">Kombinované — situačné otázky</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q26.</span><span class="q-text">Vo veľkej vodárenskej spoločnosti chcú monitorovať a riadiť čerpacie stanice rozmiestnené po celom kraji z jedného dispečerského pracoviska. Aký typ systému navrhnete a aké komponenty?</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p>Ide o klasickú aplikáciu pre <strong>SCADA systém</strong> (geograficky distribuované zariadenia).</p>
+<p><strong>Architektúra:</strong></p>
+<ul>
+<li>Na každej čerpacej stanici <strong>RTU</strong> alebo PLC s telemetriou (napr. Siemens CP1243-1).</li>
+<li>RTU má vstavané hodiny reálneho času, zálohované napájanie (batéria/UPS) a lokálnu pamäť pre prípad výpadku komunikácie.</li>
+<li>Komunikácia RTU → SCADA cez WAN (často mobilná sieť, optika alebo rádiový kanál).</li>
+<li>Protokoly: Modbus TCP/IP, IEC 60870-5-104, DNP3.</li>
+<li>Centrálny SCADA server agreguje dáta zo všetkých RTU.</li>
+<li><strong>Historian</strong> archivuje historické dáta pre analýzu.</li>
+<li>Operátorské pracoviská v dispečingu — sledovanie + ovládanie z centra.</li>
+<li><strong>Redundancia</strong>: záložný SCADA server, redundantné komunikačné trasy, UPS, redundantné operátorské stanice.</li>
+</ul>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q27.</span><span class="q-text">Operátor v hlučnej hale pracuje s rukavicami. Aké HMI a aké prvky signalizácie navrhnete?</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p><strong>HMI zariadenie:</strong></p>
+<ul>
+<li>Fyzické tlačidlá (lepšie ako dotykový displej v rukaviciach), prípadne priemyselný dotykový displej prispôsobený na ovládanie v rukaviciach.</li>
+<li>Robustný operátorský panel s dostatočne veľkými tlačidlami.</li>
+<li>Vyššie krytie IP (proti prachu/striekajúcej vode).</li>
+</ul>
+<p><strong>Signalizácia v hlučnom prostredí:</strong></p>
+<ul>
+<li>Silnejšia <strong>vizuálna signalizácia</strong> — signalizačné stĺpiky (červená/žltá/zelená), majáky pre alarmy.</li>
+<li>Akustická signalizácia musí byť dostatočne hlasná, ale pri hluku je lepšie sa spoľahnúť na vizuál.</li>
+<li>Farby podľa <strong>IEC 60204-1</strong>: červená = STOP/emergency, zelená = normál, žltá = varovanie.</li>
+</ul>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q28.</span><span class="q-text">Mám napísať SQL dotaz: pre každé oddelenie zobraz priemerný plat a počet zamestnancov, ale len pre oddelenia s priemerným platom nad 1500.</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<pre><code>SELECT o.nazov AS oddelenie,
+       COUNT(z.id) AS pocet,
+       AVG(z.plat) AS priemerny_plat
+FROM Oddelenia o
+LEFT JOIN Zamestnanci z ON z.id_oddelenie = o.id
+GROUP BY o.id, o.nazov
+HAVING AVG(z.plat) &gt; 1500
+ORDER BY priemerny_plat DESC;</code></pre>
+<p><strong>Vysvetlenie:</strong></p>
+<ul>
+<li><code>LEFT JOIN</code> — aj prázdne oddelenia (bez zamestnancov) by sa zobrazili, ale po HAVING ich pravdepodobne odfiltrujeme.</li>
+<li><code>GROUP BY o.id, o.nazov</code> — zoskupíme podľa oddelení.</li>
+<li><code>HAVING AVG(z.plat) &gt; 1500</code> — filter na skupinách (nie WHERE, lebo používame agregačnú funkciu).</li>
+<li><code>ORDER BY</code> — usporiadanie výsledku.</li>
+</ul>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q29.</span><span class="q-text">Daná tabuľka Sklad(nazov, vyrobca, telefon_vyrobcu, cena, mnozstvo) s PK(nazov, vyrobca). V akej je NF a ako ju normalizujete?</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p><strong>Analýza:</strong></p>
+<ul>
+<li>1NF — OK (atomické hodnoty, PK existuje, žiadne opakujúce sa atribúty).</li>
+<li>2NF — <strong>NIE</strong>. Atribút <code>telefon_vyrobcu</code> závisí len od časti PK — <code>vyrobca</code>, nie od celého zloženého PK (nazov + vyrobca). Cena a množstvo závisia od celého PK.</li>
+</ul>
+<p><strong>Anomálie:</strong> ak vymažeme všetky výrobky od jedného výrobcu (napr. všetky Milka výrobky), stratíme aj jeho telefónne číslo.</p>
+<p><strong>Riešenie — rozdelenie tabuľky:</strong></p>
+<pre><code>Sklad(nazov PK, vyrobca_id FK, cena, mnozstvo)
+Vyrobca(vyrobca_id PK, nazov_vyrobcu, telefon)</code></pre>
+<p>Obe tabuľky teraz vyhovujú 2NF aj 3NF (žiadne tranzitívne závislosti).</p>
+</div>
+</div>
+
+<div class="exam-question" onclick="toggleExam(this)">
+<div class="exam-question-header"><span class="q-num">Q30.</span><span class="q-text">V chemickej továrni potrebujú jeden integrovaný riadiaci systém pre celý závod — desiatky reaktorov, miešačov, kotlov v jednej budove. Aký systém zvolíte a prečo?</span><span class="toggle">›</span></div>
+<div class="exam-answer">
+<p>Vhodný je <strong>DCS (Distributed Control System)</strong>.</p>
+<p><strong>Dôvody:</strong></p>
+<ul>
+<li>DCS je určený pre riadenie technologických procesov <strong>v rámci jedného závodu</strong>.</li>
+<li>Distribuované riadenie realizované priamo v riadiacich staniciach systému.</li>
+<li>Vhodný pre <strong>komplexné procesy</strong> s mnohými regulačnými slučkami (typické v chémii, petrochémii).</li>
+<li>Integrované riadenie + vizualizácia + alarmy + history na jednej platforme.</li>
+<li>Vysoká spoľahlivosť a redundancia.</li>
+</ul>
+<p>SCADA by bola nevhodná, lebo nie je primárne určená na komplexné regulačné slučky v jednom závode (skôr na geograficky rozľahlé systémy).</p>
+</div>
+</div>
+
+</div>
+
+<!-- ABCD TEST -->
+<div id="test" class="tab-content">
+<div id="test-start-screen" class="test-start">
+    <h3>ABCD Test</h3>
+    <p>Náhodný výber otázok s náhodným poradím odpovedí. Po každej otázke uvidíš správnu odpoveď. Na konci dostaneš skóre a prehľad chýb.</p>
+    <div class="test-options">
+        <div>
+            <label for="test-category">Kategória:</label>
+            <select id="test-category">
+                <option value="all">Všetky (DB + VIZ)</option>
+                <option value="DB">Len databázy</option>
+                <option value="VIZ">Len vizualizácia</option>
+            </select>
+        </div>
+        <div>
+            <label for="test-count">Počet otázok:</label>
+            <select id="test-count">
+                <option value="10">10 otázok (rýchly test)</option>
+                <option value="20" selected>20 otázok (stredný test)</option>
+                <option value="0">Všetky otázky (kompletný test)</option>
+            </select>
+        </div>
+    </div>
+    <button class="btn" onclick="startTest()" style="font-size: 1em; padding: 14px 36px;">Začať test</button>
+</div>
+
+<div id="test-quiz-screen" class="test-quiz" style="display: none;">
+    <div class="test-progress-bar"><div class="test-progress-fill" id="test-progress-fill" style="width: 0%;"></div></div>
+    <div class="test-meta">
+        <span id="test-meta-progress">Otázka 1 z 20</span>
+        <span id="test-meta-score">Správne: 0</span>
+    </div>
+    <div class="test-category-badge" id="test-category-badge"></div>
+    <div class="test-question" id="test-question"></div>
+    <div class="test-answers" id="test-answers"></div>
+    <div class="test-feedback" id="test-feedback"></div>
+    <div class="test-next" id="test-next" style="display: none;">
+        <button class="btn" onclick="nextTestQuestion()">Pokračovať</button>
+    </div>
+</div>
+
+<div id="test-result-screen" class="test-result" style="display: none;">
+    <h2>Test ukončený</h2>
+    <div class="test-score" id="test-score-display">0 / 0</div>
+    <div class="test-result-detail" id="test-result-detail">Úspešnosť: 0 %</div>
+    <button class="btn" onclick="restartTest()">Nový test</button>
+    <button class="btn btn-secondary" onclick="reviewTest()">Zobraziť chyby</button>
+    <div class="test-review" id="test-review" style="display: none;"></div>
+</div>
+</div>
+
+</div>
+
+<script>
+// Tab switching
+function showTab(name) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(name).classList.add('active');
+    event.target.classList.add('active');
+}
+
+// Tahak sections
+function toggleSection(header) {
+    header.parentElement.classList.toggle('open');
+}
+function toggleAll(open) {
+    document.querySelectorAll('.section').forEach(s => {
+        if (open) s.classList.add('open');
+        else s.classList.remove('open');
+    });
+}
+
+// Exam questions
+function toggleExam(q) {
+    q.classList.toggle('open');
+}
+
+// FLASHCARDS DATA
+const cards = [
+    // DB Zaklady a kluce
+    {q:"Čo je databáza?", a:"Zbierka navzájom previazaných informácií bez zbytočnej redundancie. Cieľ: vyhnúť sa anomáliám pri vkladaní, aktualizácii a mazaní.", c:"DB-zaklady"},
+    {q:"Čo je SRBD (DBMS)?", a:"Systém riadenia bázy dát — softvér nad OS, ktorý umožňuje prístup, uchovávanie, aktualizáciu, zálohy a zabezpečenie dát.", c:"DB-zaklady"},
+    {q:"Vymenuj 3 anomálie pri zlom návrhu DB.", a:"Anomália vkladania, aktualizácie, mazania.", c:"DB-zaklady"},
+    {q:"Vymenuj 5 typov databáz podľa dátového modelu.", a:"Relačné (SQL), Dokumentové (MongoDB), Grafové, Key-Value, Stĺpcové.", c:"DB-zaklady"},
+    {q:"Čo znamená CRUD?", a:"Create, Read, Update, Delete.", c:"DB-zaklady"},
+    {q:"Aké sú 3 kategórie SQL príkazov?", a:"DDL (CREATE/ALTER/DROP), DML (SELECT/INSERT/UPDATE/DELETE), DCL/TCL (GRANT/COMMIT).", c:"DB-zaklady"},
+    {q:"Čo je NULL v SQL?", a:"Neznáma (nedefinovaná) hodnota — NIE nula, NIE prázdny reťazec. Testuje sa cez IS NULL / IS NOT NULL.", c:"DB-zaklady"},
+    {q:"Čo je funkčná závislosť A → B?", a:"Pre každú hodnotu A existuje práve jedna hodnota B (A jednoznačne určuje B). Príklady: mesto → PSC, rodné číslo → meno.", c:"DB-zaklady"},
+    {q:"Čo je Primary Key?", a:"Jednoznačne identifikuje riadok tabuľky. Neopakujúce sa hodnoty, NEsmie obsahovať NULL.", c:"DB-zaklady"},
+    {q:"Čo je Foreign Key?", a:"Stĺpec(ce) odkazujúce na PK/UNIQUE inej tabuľky. Vytvára relácie a zabezpečuje referenčnú integritu. Môže byť NULL.", c:"DB-zaklady"},
+    {q:"Rozdiel medzi Superkey a Candidate key?", a:"Superkey = množina atribútov ktorá identifikuje riadky (nemusí byť minimálna). Candidate key = MINIMÁLNA množina ktorá to dokáže.", c:"DB-zaklady"},
+    {q:"Čo je Alternate key?", a:"Kandidátny kľúč, ktorý NEbol zvolený za PK. Jedinečnosť sa zabezpečuje cez UNIQUE constraint.", c:"DB-zaklady"},
+    {q:"Surrogate vs Natural key?", a:"Surrogate = umelo vytvorený identifikátor bez významu (AUTO_INCREMENT). Natural = z reálnych atribútov entity (rodné číslo).", c:"DB-zaklady"},
+    {q:"Čo je Composite key?", a:"PK tvorený kombináciou viacerých stĺpcov.", c:"DB-zaklady"},
+    {q:"Intelligent key?", a:"Kľúč, ktorého jednotlivé časti nesú vlastný význam (napr. kl-st-02 = klasické-stolové-02).", c:"DB-zaklady"},
+    {q:"Aký typ použiť pre peniaze?", a:"DECIMAL(c,d) — ukladá presné číselné hodnoty. FLOAT/DOUBLE sú aproximované a zaokrúhľujú.", c:"DB-zaklady"},
+    {q:"Rozdiel CHAR vs VARCHAR?", a:"CHAR — pevná dĺžka (rýchlejšie vyhľadávanie, doplnené medzerami). VARCHAR — premenlivá dĺžka (šetrí miesto, pomalšie).", c:"DB-zaklady"},
+    {q:"Rozsahy TINYINT, SMALLINT, INT?", a:"TINYINT 1 B (-128..127), SMALLINT 2 B (-32 768..32 767), INT 4 B (-2,1 mld..2,1 mld).", c:"DB-zaklady"},
+
+    // ERA
+    {q:"Čo je entita a atribút?", a:"Entita = objekt reálneho sveta (Študent) → tabuľka. Atribút = vlastnosť entity (meno) → stĺpec.", c:"ERA"},
+    {q:"Úrovne modelovania?", a:"Konceptuálny (entity+vzťahy) → Logický (+atribúty) → Fyzický (tabuľky, dátové typy).", c:"ERA"},
+    {q:"Typy kardinality?", a:"1:1, 1:N, M:N.", c:"ERA"},
+    {q:"Príklad 1:1?", a:"Osoba ↔ Občiansky preukaz. V DB: jedna tabuľka alebo FK s UNIQUE.", c:"ERA"},
+    {q:"Príklad 1:N?", a:"Čitateľ má viac kníh, ale kniha patrí 1 čitateľovi. FK na strane 'N'.", c:"ERA"},
+    {q:"Príklad M:N?", a:"Študent ↔ predmety, film ↔ herci. Vyžaduje prepojovaciu tabuľku s 2 FK!", c:"ERA"},
+    {q:"Ako sa rieši M:N v relačnej DB?", a:"Vytvorí sa prepojovacia (väzobná) tabuľka s dvoma FK na obe entity.", c:"ERA"},
+    {q:"Kde je FK pri vzťahu 1:N?", a:"Na strane 'N' (na strane 'viac').", c:"ERA"},
+    {q:"Čo je modalita/parcialita?", a:"Určuje minimálny počet väzieb (0 = nepovinný, 1 = povinný vzťah).", c:"ERA"},
+    {q:"Crow's foot — význam |<?", a:"Jeden alebo viac (1..N). Povinný vzťah s ľubovoľne mnohými.", c:"ERA"},
+    {q:"Crow's foot — význam o<?", a:"Nula alebo viac (0..N). Nepovinný vzťah.", c:"ERA"},
+    {q:"Pravidlá ERA → relačný model?", a:"Entita → tabuľka, atribút → stĺpec, 1:N → FK na strane N, M:N → nová prepojovacia tabuľka.", c:"ERA"},
+
+    // Normalizácia
+    {q:"Cieľ normalizácie?", a:"Efektívna organizácia údajov, eliminácia redundancie, zabezpečenie integrity dát.", c:"NF"},
+    {q:"Čo je bezstratová dekompozícia?", a:"Pri spätnom spojení rozdelených tabuliek sa nesmú stratiť žiadne údaje.", c:"NF"},
+    {q:"3 podmienky 1NF?", a:"(1) Tabuľka má PK. (2) Atribúty obsahujú atomické hodnoty. (3) Žiadne opakujúce sa atribúty (typu kurz1, kurz2, kurz3).", c:"NF"},
+    {q:"Vyhovuje 1NF tabuľka s telefonmi '123, 324, 3452' v jednom stĺpci?", a:"NIE — atribút nie je atomický.", c:"NF"},
+    {q:"Čo požaduje 2NF?", a:"Je v 1NF + každý nekľúčový atribút úplne funkčne závisí od CELÉHO PK (nie len od časti). Problém vzniká pri zložených PK.", c:"NF"},
+    {q:"Príklad porušenia 2NF?", a:"Hodnotenie(student PK, kod_predmetu PK, nazov_predmetu, znamka) — nazov_predmetu závisí len od kod_predmetu. Riešenie: oddeliť tabuľku Predmety.", c:"NF"},
+    {q:"Čo požaduje 3NF?", a:"Je v 2NF + žiaden nekľúčový atribút nie je tranzitívne závislý od PK.", c:"NF"},
+    {q:"Tranzitívna závislosť?", a:"PK → A → B, kde A aj B sú nekľúčové. B závisí od PK len cez A.", c:"NF"},
+    {q:"Príklad porušenia 3NF?", a:"Zam(rc, meno, mesto, PSC) — rc → mesto → PSC. Riešenie: oddeliť Mesto(mesto_id PK, mesto, PSC).", c:"NF"},
+    {q:"Účel denormalizácie?", a:"Zámerne pridať redundanciu pre zrýchlenie čítania (SELECT) a zníženie počtu JOIN-ov.", c:"NF"},
+    {q:"Cena denormalizácie?", a:"Duplicita dát, zložitejšie INSERT/UPDATE, riziko nekonzistencie.", c:"NF"},
+
+    // SQL
+    {q:"Štruktúra SELECT s GROUP BY a HAVING?", a:"SELECT stĺpce FROM tabuľka WHERE filter GROUP BY stĺpce HAVING filter_skupín ORDER BY ... LIMIT n;", c:"SQL"},
+    {q:"Rozdiel WHERE vs HAVING?", a:"WHERE filtruje riadky PRED zoskupením. HAVING filtruje skupiny PO GROUP BY (môže obsahovať agregačné funkcie).", c:"SQL"},
+    {q:"Logické poradie SELECT?", a:"FROM → JOIN → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT.", c:"SQL"},
+    {q:"5 agregačných funkcií?", a:"COUNT, SUM, AVG, MIN, MAX.", c:"SQL"},
+    {q:"LIKE 'A%' vs LIKE 'A_'?", a:"% = ľubovoľný počet znakov; _ = presne jeden znak.", c:"SQL"},
+    {q:"Ako sa testuje NULL?", a:"IS NULL / IS NOT NULL. NIE = NULL.", c:"SQL"},
+    {q:"Rozdiel INNER JOIN vs LEFT JOIN?", a:"INNER vráti len zhody v oboch. LEFT vráti všetko z ľavej + zhody z pravej (chýbajúce z pravej = NULL).", c:"SQL"},
+    {q:"Čo robí CROSS JOIN?", a:"Kartézsky súčin — každý riadok ľavej s každým riadkom pravej.", c:"SQL"},
+    {q:"Rozdiel DELETE vs TRUNCATE?", a:"DELETE — zmaže riadky podľa WHERE, dá sa rollbackovať, zachová AUTO_INCREMENT. TRUNCATE — vymaže celú tabuľku rýchlo, resetuje AUTO_INCREMENT, nedá sa rollbackovať.", c:"SQL"},
+    {q:"Aké poznáš constraints?", a:"NOT NULL, UNIQUE, PRIMARY KEY, FOREIGN KEY, CHECK, DEFAULT, AUTO_INCREMENT.", c:"SQL"},
+    {q:"ON DELETE CASCADE?", a:"Pri zmazaní rodičovského záznamu sa automaticky zmažú všetky závislé záznamy.", c:"SQL"},
+    {q:"ON DELETE SET NULL?", a:"Pri zmazaní rodiča sa FK v závislých záznamoch nastaví na NULL.", c:"SQL"},
+    {q:"Čo je VIEW?", a:"Virtuálna tabuľka definovaná SELECT-om. Zjednodušuje dotazy, skrýva zložitosť, zvyšuje bezpečnosť.", c:"SQL"},
+    {q:"Čo je INDEX a aký má dopad?", a:"Štruktúra (B-strom) pre zrýchlenie vyhľadávania. Zrýchľuje SELECT/WHERE/JOIN, spomaľuje INSERT/UPDATE/DELETE.", c:"SQL"},
+    {q:"Má PK automaticky index?", a:"Áno, PK má automaticky unique index.", c:"SQL"},
+
+    // ACID / Triggers
+    {q:"Čo znamená ACID?", a:"Atomicity (celá alebo nič), Consistency (konzistentný stav), Isolation (paralelné neovplyvňujú), Durability (po COMMIT trvajú aj po zlyhaní).", c:"ACID"},
+    {q:"Izolačné úrovne?", a:"READ UNCOMMITTED → READ COMMITTED → REPEATABLE READ → SERIALIZABLE.", c:"ACID"},
+    {q:"Problémy súbežnosti?", a:"Dirty read, non-repeatable read, phantom read.", c:"ACID"},
+    {q:"Príkazy transakcie?", a:"START TRANSACTION; ... COMMIT; alebo ROLLBACK;", c:"ACID"},
+    {q:"Shared vs Exclusive lock?", a:"Shared (S) — pre čítanie, viacero transakcií súčasne. Exclusive (X) — pre zápis, len jedna transakcia.", c:"ACID"},
+    {q:"Čo je deadlock?", a:"Dve+ transakcie sa navzájom čakajú na zámky. DBMS to deteguje a jednu transakciu zruší.", c:"ACID"},
+    {q:"Čo je TRIGGER?", a:"Procedúra automaticky spustená pri INSERT/UPDATE/DELETE. BEFORE/AFTER + INSERT/UPDATE/DELETE + FOR EACH ROW. Pseudo-tabuľky NEW a OLD.", c:"ACID"},
+    {q:"Procedure vs Function?", a:"Procedure — volá sa cez CALL, nemusí vracať hodnotu. Function — vracia hodnotu, dá sa použiť v SELECT.", c:"ACID"},
+    {q:"Príkazy na správu používateľov?", a:"CREATE USER, GRANT, REVOKE, DROP USER, FLUSH PRIVILEGES.", c:"ACID"},
+
+    // MongoDB
+    {q:"Čo je MongoDB?", a:"Dokumentová NoSQL databáza. Dokumenty v BSON formáte, zoskupené v kolekciách. Bez pevnej schémy.", c:"Mongo"},
+    {q:"SQL → MongoDB analógia?", a:"Tabuľka → Kolekcia. Riadok → Dokument. Stĺpec → Pole. PK → _id (ObjectId). JOIN → $lookup alebo vnorené dokumenty.", c:"Mongo"},
+
+    // HMI
+    {q:"Čo robí PLC?", a:"Spracúva vstupy zo senzorov, vykonáva riadiaci algoritmus, riadi výstupy (akčné členy), poskytuje diagnostiku.", c:"HMI"},
+    {q:"Rozdiel PLC vs HMI?", a:"PLC vykonáva riadenie procesu (automaticky). HMI poskytuje človeku rozhranie na monitorovanie a ovládanie.", c:"HMI"},
+    {q:"5 úloh vizualizácie?", a:"Monitoring, ovládanie, signalizácia porúch/alarmy, diagnostika, sledovanie trendov (history).", c:"HMI"},
+    {q:"Aké údaje sa čítajú z PLC?", a:"Procesné veličiny (teplota, tlak, hladina, prietok) a stavy zariadení (binárne).", c:"HMI"},
+    {q:"Aké údaje sa zapisujú do PLC?", a:"Parametre/recepty (žiadané hodnoty) a riadiace povely (ZAP/VYP, AUTO/MAN).", c:"HMI"},
+    {q:"Roly v HMI projekte?", a:"Programátor PLC, vývojár HMI/SCADA, technológ, IT/DB špecialista, projektant.", c:"HMI"},
+    {q:"Stavebné prvky HMI?", a:"Premenné (tags), obrazovky, grafické objekty, alarmy, trendy, recepty.", c:"HMI"},
+    {q:"Typy premenných v HMI?", a:"Externé (prepojené na PLC) a interné (len v HMI).", c:"HMI"},
+    {q:"Typy obrazoviek?", a:"Base (technologická), Master/Template (spoločné prvky), Popup (pomocné okná).", c:"HMI"},
+    {q:"Typy alarmov?", a:"Binárne (diskrétny stav) a analógové (limity HI, LO, HIHI, LOLO).", c:"HMI"},
+    {q:"Info pri alarme?", a:"Dátum/čas, alarmová správa, názov a hodnota premennej, priorita (severity), operátor ktorý ho potvrdil.", c:"HMI"},
+    {q:"Stavy alarmu?", a:"Aktívny, zaniknutý, potvrdený (ACK).", c:"HMI"},
+    {q:"Typy trendov?", a:"Online (real-time) a historické (archivované).", c:"HMI"},
+    {q:"Operácie s receptami?", a:"Send (do PLC), Snapshot (z PLC), Save (do HMI), Delete (odstrániť).", c:"HMI"},
+
+    // HMI Design
+    {q:"Norma pre ergonómiu HCI?", a:"ISO 9241.", c:"HMI-design"},
+    {q:"3 vlastnosti usability podľa ISO 9241?", a:"Účinnosť (effectiveness), Efektívnosť (efficiency), Spokojnosť (satisfaction).", c:"HMI-design"},
+    {q:"3 kroky práce operátora?", a:"Detekcia → Pochopenie → Reakcia.", c:"HMI-design"},
+    {q:"3 oblasti HMI obrazovky?", a:"Prehľadová (information), Pracovná (work), Ovládacia (control).", c:"HMI-design"},
+    {q:"Norma pre farby HMI obrazoviek?", a:"IEC 60073.", c:"HMI-design"},
+    {q:"Význam farieb v HMI (IEC 60073)?", a:"Červená=alarm; Žltá=varovanie; Žltozelená=výstraha; Zelená=normál; Modrá=výzva na zásah; Biela/sivá=neutrálne.", c:"HMI-design"},
+    {q:"Norma pre operátorské obrazovky?", a:"VDI/VDE 3699 a moderne ISA-101 (High Performance HMI).", c:"HMI-design"},
+    {q:"Princíp konzistentnosti?", a:"Rovnaké farby/symboly/rozloženie naprieč celým HMI projektom — operátor sa nemusí znovu učiť.", c:"HMI-design"},
+
+    // Hardvér
+    {q:"4 typy HMI hardvéru?", a:"Diskrétne ovládacie prvky (tlačidlá), signalizačné prvky (kontrolky, majáky), HMI panely/displeje, SCADA pracoviská.", c:"HW"},
+    {q:"Norma pre farby tlačidiel?", a:"IEC 60204-1.", c:"HW"},
+    {q:"6 faktorov výberu HMI?", a:"1) Prostredie, 2) typ aplikácie, 3) pripojenie, 4) spôsob zadávania, 5) softvér, 6) ďalšie (cena, podpora).", c:"HW"},
+    {q:"Čo je krytie IP?", a:"Stupeň ochrany pred prachom/vodou. Prvé číslo = prach, druhé = voda.", c:"HW"},
+    {q:"EX prostredie?", a:"Výbušné prostredie — vyžaduje špeciálne certifikované zariadenia.", c:"HW"},
+    {q:"Komunikačné protokoly PLC/HMI?", a:"Modbus, Modbus TCP/IP, Profinet, EtherCAT.", c:"HW"},
+
+    // SCADA
+    {q:"Skratka SCADA?", a:"Supervisory Control And Data Acquisition.", c:"SCADA"},
+    {q:"Definícia SCADA?", a:"Systém ktorý dozerá a riadi GEOGRAFICKY ROZLOŽENÉ procesy (telecontrol system).", c:"SCADA"},
+    {q:"Aplikácie SCADA?", a:"Energetické siete, vodárne a kanalizácie, ropovody/plynovody, doprava, veľké závody.", c:"SCADA"},
+    {q:"Rozdiel SCADA vs DCS?", a:"SCADA = geograficky distribuované (vodárne, energetika). DCS = jeden závod (chémia, petrochémia).", c:"SCADA"},
+    {q:"Čo je RTU?", a:"Remote Terminal Unit — zariadenie pre vzdialený zber dát a komunikáciu so SCADA. Funkcie ako PLC ale optimalizované na telemetriu.", c:"SCADA"},
+    {q:"Vlastnosti RTU?", a:"Robustná konštrukcia, RTC, zálohované napájanie (UPS/batéria), lokálna pamäť, watchdog, redundantné porty.", c:"SCADA"},
+    {q:"Protokoly RTU/SCADA?", a:"Modbus, IEC 60870-5-101/104, DNP3, IEC 61850.", c:"SCADA"},
+    {q:"PLC vs RTU?", a:"PLC — rýchle real-time riadenie v závode. RTU — vzdialené, geograficky rozložené, vstavané RTC a zálohované napájanie.", c:"SCADA"},
+    {q:"4 generácie SCADA?", a:"1) Centralizovaná, 2) Distribuovaná (LAN), 3) Sieťová (TCP/IP), 4) Moderná (cloud, IoT).", c:"SCADA"},
+    {q:"Redundancia v SCADA?", a:"Záložné servery, databáza, sieť, operátorské stanice, UPS — prevezmú funkciu pri poruche.", c:"SCADA"},
+    {q:"Komponenty distribuovanej SCADA?", a:"I/O server, alarm server, historian (trend) server, SCADA server, operátorské stanice.", c:"SCADA"},
+    {q:"High Performance HMI?", a:"Moderný koncept — prehľadné, minimalistické HMI s sivým pozadím; farby len pre alarmy a odchýlky.", c:"SCADA"},
+
+    // P&ID
+    {q:"Čo je P&ID?", a:"Piping and Instrumentation Diagram — technologická schéma s potrubím, zariadeniami a meracími prístrojmi.", c:"PID"},
+    {q:"Dve normy pre P&ID?", a:"ISO 3511 (Európa) a ANSI/ISA-5.1 (USA).", c:"PID"},
+    {q:"Základná značka prístroja?", a:"Kružnica (~10 mm) s písmenkovým kódom.", c:"PID"},
+    {q:"Bez čiary / 1 čiara / 2 čiary v značke?", a:"Bez = v technológii (field). 1 čiara = dostupný operátorovi (panel/HMI). 2 čiary = pomocný panel.", c:"PID"},
+    {q:"Štruktúra písmenkového kódu?", a:"1. písmeno = veličina. 2. písmeno (voliteľné) = dodatok. Ďalšie = funkcia (poradie I-R-C-T-Q-S-Z-A).", c:"PID"},
+    {q:"Veličiny T, P, F, L?", a:"T=Temperature, P=Pressure, F=Flow, L=Level.", c:"PID"},
+    {q:"Veličiny S, Q, G, U?", a:"S=Speed, Q=Quality (pH, vodivosť), G=Gauging (poloha), U=Multivariable.", c:"PID"},
+    {q:"Funkcie I, R, C, T?", a:"I=Indicator, R=Recorder, C=Controller, T=Transmitter.", c:"PID"},
+    {q:"Funkcie A, S, Z, Q?", a:"A=Alarm, S=Switch, Z=Position, Q=Integrator/Totalizer.", c:"PID"},
+    {q:"Dodatky D, F, J, Q?", a:"D=Difference, F=Ratio (pomer), J=Scan, Q=Integrate/Totalize.", c:"PID"},
+    {q:"Značka TIC?", a:"Temperature Indicator Controller — indikácia + regulácia teploty.", c:"PID"},
+    {q:"Značka FRC?", a:"Flow Recorder Controller — zapisovanie + regulácia prietoku.", c:"PID"},
+    {q:"Značka PDR?", a:"Pressure Difference Recorder — zapisovanie diferencie tlaku.", c:"PID"},
+    {q:"Značka LCA?", a:"Level Controller Alarm — regulácia hladiny so signalizáciou.", c:"PID"},
+    {q:"Značka FFC?", a:"Flow + Ratio Controller — pomerová regulácia prietoku.", c:"PID"},
+    {q:"Značka HS?", a:"Hand Switch — ručné ovládanie.", c:"PID"},
+    {q:"Symbol regulačného ventilu — typy pohonu?", a:"Krúžok prázdny = automatický (servo). Krúžok s H = manuálny pohon. Trojuholník = nešpecifikovaný korekčný člen.", c:"PID"},
+    {q:"Šípka nahor/nadol/dve čiarky pri ventile?", a:"Nahor = fail OPEN. Nadol = fail CLOSE. Dve čiarky = fail FREEZE (zostane v polohe).", c:"PID"},
+    {q:"Gate valve vs Globe valve?", a:"Gate (šupátkový) = len úplne OTV/ZATV. Globe (sedlový) = plynulá regulácia prietoku.", c:"PID"},
+    {q:"Šesťhran v P&ID?", a:"Riadiaci počítač (PLC/DCS) — softvérová funkcia.", c:"PID"},
+    {q:"Hrubá vs tenká čiara?", a:"Hrubá = zariadenie/potrubie. Tenká = pripojenie snímača/signál.", c:"PID"},
+    {q:"Bodka na križovaní?", a:"Bodka = čiary sa spájajú. Bez bodky = len križujú sa.", c:"PID"},
+
+    // Kombinované
+    {q:"Tabuľka Studenti s atribútmi kurz1, kurz2, kurz3 — v akej NF a ako opraviť?", a:"Nie je v 1NF (opakujúce sa atribúty). Riešenie: vyčleniť tabuľku KurzyStudenta(id PK, id_student CK, kurz CK).", c:"kombi"},
+    {q:"Sklad(nazov, vyrobca, telefon_vyrobcu, cena, mnozstvo) s PK(nazov, vyrobca) — NF?", a:"1NF áno. 2NF nie — telefon_vyrobcu závisí len od vyrobca. Riešenie: vyčleniť tabuľku Vyrobca.", c:"kombi"},
+    {q:"Zam(id PK, meno, mesto, PSC) — 3NF?", a:"Nie — id → mesto → PSC je tranzitívna závislosť. Oddeliť tabuľku Mesto(mesto_id PK, mesto, PSC).", c:"kombi"},
+    {q:"Vodáreň chce dohliadať na čerpacie stanice po celom kraji — aký systém?", a:"SCADA s RTU na staniciach (geograficky distribuovaný systém).", c:"kombi"},
+    {q:"Chemická továreň chce integrovaný riadiaci systém pre celý závod — SCADA alebo DCS?", a:"DCS — určený pre riadenie procesov v rámci jedného závodu.", c:"kombi"},
+    {q:"V schéme vidím značku FT v technológii a FIC v paneli — význam?", a:"FT = Flow Transmitter (prevodník prietoku v poli). FIC = Flow Indicator Controller (zobrazenie + regulácia, na paneli/HMI).", c:"kombi"},
+    {q:"Operátor v rukaviciach a hluku — aké HMI?", a:"Fyzické tlačidlá alebo špeciálny dotykový displej + vizuálna signalizácia (majáky, signalizačné stĺpiky).", c:"kombi"},
+    {q:"Tlačidlá STOP a EMERGENCY — akú farbu?", a:"Červenú (norma IEC 60204-1).", c:"kombi"},
+    {q:"Vek z dátumu narodenia mám ukladať?", a:"Nie — odvodený údaj. Počíta sa pri dopyte (napr. TIMESTAMPDIFF(YEAR, datum_narodenia, CURDATE())).", c:"kombi"},
+    {q:"Dotaz: oddelenia s priemerným platom > 1500?", a:"SELECT id_oddelenie, AVG(plat) FROM Zamestnanci GROUP BY id_oddelenie HAVING AVG(plat) > 1500;", c:"kombi"}
+];
+
+let currentCard = 0;
+let filteredCards = cards;
+
+function renderCard() {
+    if (filteredCards.length === 0) {
+        document.getElementById('flashcard-container').innerHTML = '<div class="flashcard"><p>Žiadne karty v tejto kategórii.</p></div>';
+        document.getElementById('progress-info').textContent = '0 / 0';
+        return;
+    }
+    if (currentCard >= filteredCards.length) currentCard = 0;
+    if (currentCard < 0) currentCard = filteredCards.length - 1;
+    const card = filteredCards[currentCard];
+    const html = `
+        <div class="flashcard">
+            <div>
+                <div class="card-num">Karta ${currentCard + 1} z ${filteredCards.length}</div>
+                <div class="card-category">${categoryLabel(card.c)}</div>
+                <div class="card-question">${card.q}</div>
+                <div class="card-answer" id="answer">${card.a}</div>
+            </div>
+            <div class="card-buttons">
+                <button class="btn" onclick="showAnswer()">Zobraziť odpoveď</button>
+                <button class="btn btn-secondary" onclick="prevCard()">Predchádzajúca</button>
+                <button class="btn btn-secondary" onclick="nextCard()">Nasledujúca</button>
+                <button class="btn btn-secondary" onclick="shuffleCards()">Zamiešať</button>
+            </div>
+        </div>
+    `;
+    document.getElementById('flashcard-container').innerHTML = html;
+    document.getElementById('progress-info').textContent = `Karta ${currentCard + 1} z ${filteredCards.length}`;
+}
+
+function categoryLabel(c) {
+    const labels = {
+        "DB-zaklady": "DB: Základy a kľúče",
+        "ERA": "DB: ERA a kardinalita",
+        "NF": "DB: Normalizácia",
+        "SQL": "DB: SQL",
+        "ACID": "DB: Transakcie/Trigger",
+        "Mongo": "DB: MongoDB",
+        "HMI": "VIZ: HMI základy",
+        "HMI-design": "VIZ: Návrh HMI",
+        "HW": "VIZ: Hardvér",
+        "SCADA": "VIZ: SCADA",
+        "PID": "VIZ: P&ID značky",
+        "kombi": "Kombinované"
+    };
+    return labels[c] || c;
+}
+
+function showAnswer() {
+    document.getElementById('answer').classList.add('shown');
+}
+
+function nextCard() { currentCard++; renderCard(); }
+function prevCard() { currentCard--; renderCard(); }
+
+function shuffleCards() {
+    filteredCards = [...filteredCards].sort(() => Math.random() - 0.5);
+    currentCard = 0;
+    renderCard();
+}
+
+function filterCards() {
+    const filter = document.getElementById('category-filter').value;
+    filteredCards = filter === 'all' ? cards : cards.filter(c => c.c === filter);
+    currentCard = 0;
+    renderCard();
+}
+
+function resetProgress() {
+    currentCard = 0;
+    renderCard();
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+    if (document.getElementById('karticky').classList.contains('active')) {
+        if (e.key === 'ArrowRight') nextCard();
+        if (e.key === 'ArrowLeft') prevCard();
+        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); showAnswer(); }
+    }
+});
+
+renderCard();
+
+// =========================================================
+// ABCD TEST
+// =========================================================
+const testQuestions = [
+    // ---- DATABÁZY ----
+    {cat:"DB", q:"Čo je Primary Key (primárny kľúč)?", options:[
+        "Stĺpec(ce) ktorý jednoznačne identifikuje riadok a NEsmie obsahovať NULL",
+        "Stĺpec ktorý odkazuje na PK inej tabuľky",
+        "Akýkoľvek unikátny stĺpec, môže obsahovať aj NULL",
+        "Synonymum pre cudzí kľúč"
+    ], correct:0},
+    {cat:"DB", q:"V akej normálnej forme je tabuľka so stĺpcami telefon1, telefon2, telefon3?", options:[
+        "Nie je ani v 1NF (opakujúce sa atribúty)",
+        "Je v 1NF ale nie v 2NF",
+        "Je v 2NF ale nie v 3NF",
+        "Je v 3NF"
+    ], correct:0},
+    {cat:"DB", q:"Čo znamená písmeno I v skratke ACID?", options:[
+        "Isolation",
+        "Integrity",
+        "Indexing",
+        "Independence"
+    ], correct:0},
+    {cat:"DB", q:"Aký je rozdiel medzi WHERE a HAVING?", options:[
+        "WHERE filtruje riadky pred GROUP BY, HAVING filtruje skupiny po GROUP BY",
+        "WHERE je pre čísla, HAVING pre texty",
+        "WHERE pre SELECT, HAVING pre UPDATE",
+        "Sú to synonymá"
+    ], correct:0},
+    {cat:"DB", q:"Ako sa rieši vzťah M:N v relačnej databáze?", options:[
+        "Vytvorí sa prepojovacia tabuľka s dvoma FK na obe entity",
+        "Pridá sa FK do oboch pôvodných tabuliek",
+        "Použije sa CHECK constraint",
+        "M:N nie je v relačných DB možný"
+    ], correct:0},
+    {cat:"DB", q:"Aký dátový typ je NAJVHODNEJŠÍ na ukladanie ceny v eurách?", options:[
+        "DECIMAL(c,d)",
+        "FLOAT",
+        "DOUBLE",
+        "VARCHAR"
+    ], correct:0},
+    {cat:"DB", q:"Čo robí ON DELETE CASCADE?", options:[
+        "Pri zmazaní rodičovského záznamu sa zmažú aj všetky závislé záznamy",
+        "Zakáže zmazať rodiča pokiaľ má závislé záznamy",
+        "Nastaví FK v závislých záznamoch na NULL",
+        "Vytvorí kópiu záznamu pred zmazaním"
+    ], correct:0},
+    {cat:"DB", q:"Aký je rozdiel medzi INNER JOIN a LEFT JOIN?", options:[
+        "INNER vracia iba zhody v oboch tabuľkách; LEFT vracia všetko z ľavej + zhody",
+        "INNER je rýchlejší a vracia viac riadkov ako LEFT",
+        "LEFT JOIN nevracia NULL hodnoty",
+        "LEFT JOIN je kartézsky súčin"
+    ], correct:0},
+    {cat:"DB", q:"Čo je VIEW v SQL?", options:[
+        "Virtuálna tabuľka definovaná SELECT-om, neukladá vlastné dáta",
+        "Indexovaná tabuľka s rýchlejším prístupom",
+        "Záloha tabuľky",
+        "Štatistika o tabuľke"
+    ], correct:0},
+    {cat:"DB", q:"Surrogate key je...", options:[
+        "Umelo vytvorený identifikátor bez vlastného významu (napr. AUTO_INCREMENT id)",
+        "Kľúč odvodený z reálnych atribútov entity (napr. rodné číslo)",
+        "Cudzí kľúč",
+        "Kľúč zložený z viacerých stĺpcov"
+    ], correct:0},
+    {cat:"DB", q:"Tranzitívna závislosť je porušením...", options:[
+        "3NF",
+        "1NF",
+        "2NF",
+        "Bezstratovej dekompozície"
+    ], correct:0},
+    {cat:"DB", q:"Atomická hodnota v 1NF znamená...", options:[
+        "Ďalej nedeliteľná hodnota",
+        "Hodnota typu INT",
+        "Hodnota ktorá nie je NULL",
+        "Hodnota uložená v jednej transakcii"
+    ], correct:0},
+    {cat:"DB", q:"Čo robí TRUNCATE TABLE?", options:[
+        "Rýchlo vymaže všetky riadky, resetuje AUTO_INCREMENT, nedá sa rollbackovať",
+        "Zmaže tabuľku aj so štruktúrou (ako DROP)",
+        "Zmaže iba duplicitné riadky",
+        "Vytvorí kópiu tabuľky"
+    ], correct:0},
+    {cat:"DB", q:"Operátor LIKE 'A%' v SQL znamená...", options:[
+        "Reťazec začínajúci na A (% = ľubovoľný počet ľubovoľných znakov)",
+        "Reťazec presne 'A%'",
+        "Reťazec dlhý A znakov",
+        "Reťazec obsahujúci znak %"
+    ], correct:0},
+    {cat:"DB", q:"Ktorá vlastnosť ACID zaručuje že po COMMIT-e zmeny trvajú aj po výpadku systému?", options:[
+        "Durability",
+        "Atomicity",
+        "Consistency",
+        "Isolation"
+    ], correct:0},
+    {cat:"DB", q:"Foreign key môže obsahovať NULL hodnotu?", options:[
+        "Áno, môže",
+        "Nie, nikdy",
+        "Iba ak je PK v rodičovskej tabuľke NULL",
+        "Iba v MongoDB"
+    ], correct:0},
+    {cat:"DB", q:"Čo je dokument v MongoDB?", options:[
+        "Záznam vo formáte BSON (analógia riadku v SQL tabuľke)",
+        "Súbor pripojený k databáze",
+        "Synonymum pre kolekciu",
+        "Schéma databázy"
+    ], correct:0},
+    {cat:"DB", q:"Aký vzťah je medzi knihou a autorom (kniha môže mať viac autorov, autor napísal viac kníh)?", options:[
+        "M:N",
+        "1:1",
+        "1:N",
+        "Žiadny vzťah"
+    ], correct:0},
+    {cat:"DB", q:"Aký je počet riadkov výsledku CROSS JOIN dvoch tabuliek s m a n riadkami?", options:[
+        "m × n (kartézsky súčin)",
+        "m + n",
+        "max(m, n)",
+        "min(m, n)"
+    ], correct:0},
+    {cat:"DB", q:"Trigger BEFORE INSERT umožňuje...", options:[
+        "Modifikovať vkladané hodnoty cez NEW pred uložením do tabuľky",
+        "Zaslať email po vložení",
+        "Zrušiť všetky predchádzajúce inserty",
+        "Vyrobiť logovací záznam až po úspešnom uložení"
+    ], correct:0},
+    {cat:"DB", q:"Candidate key je...", options:[
+        "Minimálna množina atribútov, ktorá jednoznačne identifikuje riadky",
+        "Akýkoľvek superkľúč (nemusí byť minimálny)",
+        "Synonymum pre cudzí kľúč",
+        "Stĺpec s constraint DEFAULT"
+    ], correct:0},
+    {cat:"DB", q:"Anomália mazania nastáva keď...", options:[
+        "Zmazaním riadku stratím aj iné dôležité informácie ktoré obsahoval",
+        "DBMS odmietne vykonať DELETE",
+        "Po DELETE sa nedá robiť ROLLBACK",
+        "Mažú sa duplicitné dáta"
+    ], correct:0},
+    {cat:"DB", q:"Aký je rozdiel medzi PROCEDURE a FUNCTION v SQL?", options:[
+        "Procedure sa volá cez CALL a nemusí vracať hodnotu; function vracia hodnotu a dá sa použiť v SELECT",
+        "Procedure môže obsahovať loop, function nie",
+        "Function je rýchlejšia",
+        "Procedure môže byť triggernutá automaticky, function nie"
+    ], correct:0},
+
+    // ---- VIZUALIZÁCIA ----
+    {cat:"VIZ", q:"Čo znamená skratka SCADA?", options:[
+        "Supervisory Control And Data Acquisition",
+        "System Control And Data Architecture",
+        "Supervisory Command And Decision Algorithm",
+        "Standardized Control And Data Analysis"
+    ], correct:0},
+    {cat:"VIZ", q:"Aký je hlavný rozdiel medzi SCADA a DCS?", options:[
+        "SCADA pre geograficky distribuované systémy, DCS pre riadenie procesov v rámci jedného závodu",
+        "SCADA je staršia technológia ako DCS",
+        "DCS nedokáže riadiť v reálnom čase",
+        "Nie je medzi nimi žiadny rozdiel, sú to synonymá"
+    ], correct:0},
+    {cat:"VIZ", q:"Čo je RTU?", options:[
+        "Remote Terminal Unit – zariadenie pre vzdialený zber dát a komunikáciu so SCADA",
+        "Real-Time Unit – rýchly procesor v PLC",
+        "Routing Terminal Unit – sieťový router",
+        "Redundant Trigger Unit – bezpečnostný prvok"
+    ], correct:0},
+    {cat:"VIZ", q:"Akú farbu má alarmový (naliehavý) stav podľa IEC 60073?", options:[
+        "Červenú",
+        "Žltú",
+        "Modrú",
+        "Bielu"
+    ], correct:0},
+    {cat:"VIZ", q:"Aké sú 3 vlastnosti použiteľnosti (usability) podľa ISO 9241?", options:[
+        "Účinnosť (effectiveness), Efektívnosť (efficiency), Spokojnosť (satisfaction)",
+        "Rýchlosť, Presnosť, Cena",
+        "Použiteľnosť, Naučiteľnosť, Atraktivita",
+        "Stabilita, Spoľahlivosť, Výkon"
+    ], correct:0},
+    {cat:"VIZ", q:"Čo znamená značka TIC v P&ID podľa ISO 3511?", options:[
+        "Temperature Indicator Controller – indikácia a regulácia teploty",
+        "Tank Indicator Control – indikácia hladiny v nádrži",
+        "Time Integrator Counter – počítadlo času",
+        "Total Inlet Control – ovládanie prítoku"
+    ], correct:0},
+    {cat:"VIZ", q:"Na čo je vhodný gate valve (šupátkový ventil)?", options:[
+        "Iba na úplné otvorenie alebo zatvorenie prietoku (nie na reguláciu)",
+        "Na plynulú reguláciu prietoku",
+        "Na meranie tlaku v potrubí",
+        "Na sumáciu pretečeného objemu"
+    ], correct:0},
+    {cat:"VIZ", q:"Šípka NAHOR pri symbole ventila znamená...", options:[
+        "Pri výpadku energie ventil otvorí (fail open)",
+        "Pri výpadku ventil zatvorí (fail close)",
+        "Pri výpadku zostane v polohe (fail freeze)",
+        "Ventil je manuálne ovládaný"
+    ], correct:0},
+    {cat:"VIZ", q:"Aké údaje sa typicky ZAPISUJÚ z HMI do PLC?", options:[
+        "Žiadané hodnoty (setpointy) a riadiace povely (ZAP/VYP, AUTO/MAN)",
+        "Aktuálne hodnoty meraných veličín zo senzorov",
+        "Aktuálne stavy zariadení (motor zapnutý, ventil otvorený)",
+        "Historické trendy a archív údajov"
+    ], correct:0},
+    {cat:"VIZ", q:"Ktorá z týchto NIE je generácia SCADA?", options:[
+        "Kvantová",
+        "Centralizovaná",
+        "Distribuovaná",
+        "Sieťová"
+    ], correct:0},
+    {cat:"VIZ", q:"Čo znamená ACK pri alarmoch v HMI?", options:[
+        "Acknowledged – alarm bol potvrdený operátorom",
+        "Active Control Key – aktívny ovládací kľúč",
+        "Auto Configuration Kit – automatická konfigurácia",
+        "Alarm Code Klassifier – klasifikácia kódu alarmu"
+    ], correct:0},
+    {cat:"VIZ", q:"Čo obsahuje master panel (template) v HMI?", options:[
+        "Spoločné prvky všetkých obrazoviek (hlavička, navigácia, čas, alarmy)",
+        "Iba hlavnú technologickú schému procesu",
+        "Iba zoznam aktívnych alarmov",
+        "Iba recepty pre výrobu"
+    ], correct:0},
+    {cat:"VIZ", q:"Čo robí operácia Snapshot pri receptoch v HMI?", options:[
+        "Načíta aktuálne hodnoty premenných z PLC do receptu",
+        "Odošle parametre receptu do PLC",
+        "Uloží obrázok obrazovky",
+        "Zmaže recept z úložiska"
+    ], correct:0},
+    {cat:"VIZ", q:"Čo znamená skratka P&ID?", options:[
+        "Piping and Instrumentation Diagram",
+        "Process and Industrial Design",
+        "Programmable and Integrated Database",
+        "Pneumatic and Inductive Driver"
+    ], correct:0},
+    {cat:"VIZ", q:"V čom má RTU výhodu oproti bežnému PLC?", options:[
+        "Vstavané hodiny reálneho času, zálohované napájanie a lokálna pamäť pre prípad výpadku komunikácie",
+        "Vyšší výkon CPU pre náročné výpočty",
+        "Väčší dotykový displej",
+        "Viac USB portov pre periférie"
+    ], correct:0},
+    {cat:"VIZ", q:"Čo je NA NAJVYŠŠEJ úrovni hierarchie HMI obrazoviek?", options:[
+        "Prehľadová technologická obrazovka celého systému",
+        "Popup okno pre ovládanie ventilu",
+        "Obrazovka s receptami",
+        "Alarmová obrazovka"
+    ], correct:0},
+    {cat:"VIZ", q:"Čo NIE je typickou úlohou vizualizácie (HMI/SCADA)?", options:[
+        "Spracovanie surových signálov zo senzorov (to robí PLC)",
+        "Monitoring procesu",
+        "Signalizácia alarmov",
+        "Archivácia historických dát"
+    ], correct:0},
+    {cat:"VIZ", q:"Akú normu spomína prednáška pre ergonómiu interakcie človek-počítač?", options:[
+        "ISO 9241",
+        "ISO 9001 (manažment kvality)",
+        "IEC 60204 (bezpečnosť strojov)",
+        "DIN 2403 (potrubia)"
+    ], correct:0},
+    {cat:"VIZ", q:"Pri komunikácii PLC ↔ HMI sa procesné veličiny (teplota, tlak, hladina)...", options:[
+        "Čítajú z PLC do HMI",
+        "Zapisujú z HMI do PLC",
+        "Ukladajú len v HMI bez PLC",
+        "Generujú náhodne v HMI"
+    ], correct:0},
+    {cat:"VIZ", q:"High Performance HMI sa vyznačuje...", options:[
+        "Minimalizmom, sivým pozadím, farby sú vyhradené hlavne pre alarmy a odchýlky",
+        "Farebne preplnenými obrazovkami s mnohými 3D efektmi",
+        "Veľkými animáciami všetkých zariadení",
+        "Reklamnými bannermi a logami v každom rohu"
+    ], correct:0},
+    {cat:"VIZ", q:"Vodárenská spoločnosť potrebuje monitorovať čerpacie stanice po celom kraji z jedného dispečingu. Aké riešenie?", options:[
+        "SCADA s RTU na jednotlivých čerpacích staniciach",
+        "Iba lokálne HMI panely bez centralizácie",
+        "DCS systém (určený pre jeden závod)",
+        "Iba PLC s fyzickými tlačidlami"
+    ], correct:0},
+    {cat:"VIZ", q:"Operátor pracujúci v rukaviciach potrebuje...", options:[
+        "Fyzické tlačidlá alebo dotykový displej prispôsobený na ovládanie v rukaviciach",
+        "Klasický kapacitný dotykový displej ako na smartfóne",
+        "Klasickú myš a klávesnicu",
+        "Iba audio rozhranie bez vizualizácie"
+    ], correct:0},
+    {cat:"VIZ", q:"Norma IEC 60204-1 sa týka...", options:[
+        "Farby tlačidiel a signalizačných prvkov (hardvér pri strojoch)",
+        "Komunikačného protokolu pre SCADA",
+        "Veľkosti dotykového displeja",
+        "Spôsobu zapájania elektroinštalácie v dome"
+    ], correct:0},
+    {cat:"VIZ", q:"Čo zobrazuje analógový alarm v HMI?", options:[
+        "Prekročenie definovaných limitov hodnoty (HI, LO, HIHI, LOLO)",
+        "Iba binárne stavy zariadení (zapnuté / vypnuté)",
+        "Iba historické dáta",
+        "Stav komunikácie s PLC"
+    ], correct:0}
+];
+
+let currentTest = [];
+let currentTestIdx = 0;
+let testScore = 0;
+let testAnswered = false;
+let testWrongAnswers = [];
+
+function shuffleArr(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function startTest() {
+    const cat = document.getElementById('test-category').value;
+    const count = parseInt(document.getElementById('test-count').value);
+    let pool = cat === 'all' ? testQuestions : testQuestions.filter(q => q.cat === cat);
+    pool = shuffleArr(pool);
+    if (count > 0 && count < pool.length) pool = pool.slice(0, count);
+    currentTest = pool.map(q => {
+        // Zamiešame poradie odpovedí a zapamätáme nový index správnej
+        const indexed = q.options.map((opt, i) => ({opt, isCorrect: i === q.correct}));
+        const shuffled = shuffleArr(indexed);
+        return {
+            cat: q.cat,
+            q: q.q,
+            options: shuffled.map(s => s.opt),
+            correct: shuffled.findIndex(s => s.isCorrect)
+        };
+    });
+    currentTestIdx = 0;
+    testScore = 0;
+    testWrongAnswers = [];
+    document.getElementById('test-start-screen').style.display = 'none';
+    document.getElementById('test-result-screen').style.display = 'none';
+    document.getElementById('test-quiz-screen').style.display = 'block';
+    renderTestQuestion();
+}
+
+function renderTestQuestion() {
+    const q = currentTest[currentTestIdx];
+    testAnswered = false;
+    document.getElementById('test-progress-fill').style.width = ((currentTestIdx) / currentTest.length * 100) + '%';
+    document.getElementById('test-meta-progress').textContent = `Otázka ${currentTestIdx + 1} z ${currentTest.length}`;
+    document.getElementById('test-meta-score').textContent = `Správne: ${testScore}`;
+    document.getElementById('test-category-badge').textContent = q.cat === 'DB' ? 'Databázy' : 'Vizualizácia';
+    document.getElementById('test-question').textContent = q.q;
+    const letters = ['A', 'B', 'C', 'D'];
+    const html = q.options.map((opt, i) =>
+        `<button class="test-answer" onclick="selectAnswer(${i})"><span class="letter">${letters[i]}</span><span>${opt}</span></button>`
+    ).join('');
+    document.getElementById('test-answers').innerHTML = html;
+    document.getElementById('test-feedback').className = 'test-feedback';
+    document.getElementById('test-feedback').innerHTML = '';
+    document.getElementById('test-next').style.display = 'none';
+}
+
+function selectAnswer(idx) {
+    if (testAnswered) return;
+    testAnswered = true;
+    const q = currentTest[currentTestIdx];
+    const buttons = document.querySelectorAll('.test-answer');
+    buttons.forEach((btn, i) => {
+        btn.disabled = true;
+        if (i === q.correct) btn.classList.add('correct');
+        else if (i === idx) btn.classList.add('wrong');
+    });
+    const fb = document.getElementById('test-feedback');
+    if (idx === q.correct) {
+        testScore++;
+        fb.className = 'test-feedback correct shown';
+        fb.innerHTML = '<strong>Správne</strong>';
+    } else {
+        testWrongAnswers.push({
+            q: q.q,
+            given: q.options[idx],
+            correct: q.options[q.correct]
+        });
+        fb.className = 'test-feedback wrong shown';
+        fb.innerHTML = `<strong>Nesprávne.</strong> Správna odpoveď: <em>${q.options[q.correct]}</em>`;
+    }
+    document.getElementById('test-meta-score').textContent = `Správne: ${testScore}`;
+    document.getElementById('test-next').style.display = 'block';
+    if (currentTestIdx === currentTest.length - 1) {
+        document.querySelector('#test-next button').textContent = 'Zobraziť výsledok';
+    }
+}
+
+function nextTestQuestion() {
+    currentTestIdx++;
+    if (currentTestIdx >= currentTest.length) {
+        showTestResult();
+    } else {
+        renderTestQuestion();
+    }
+}
+
+function showTestResult() {
+    document.getElementById('test-quiz-screen').style.display = 'none';
+    document.getElementById('test-result-screen').style.display = 'block';
+    const pct = Math.round(testScore / currentTest.length * 100);
+    const scoreEl = document.getElementById('test-score-display');
+    scoreEl.textContent = `${testScore} / ${currentTest.length}`;
+    scoreEl.className = 'test-score ' + (pct >= 75 ? 'good' : pct >= 50 ? 'mid' : 'bad');
+    let hodnotenie = '';
+    if (pct >= 90) hodnotenie = 'Výborný výsledok';
+    else if (pct >= 75) hodnotenie = 'Veľmi dobre';
+    else if (pct >= 60) hodnotenie = 'Dobre, ešte si trochu zopakuj';
+    else if (pct >= 40) hodnotenie = 'Odporúčam ešte zopakovať';
+    else hodnotenie = 'Začni s ťahákom a vráť sa neskôr';
+    document.getElementById('test-result-detail').innerHTML =
+        `Úspešnosť: <strong>${pct} %</strong> · ${hodnotenie}`;
+    document.getElementById('test-review').style.display = 'none';
+    document.getElementById('test-review').innerHTML = '';
+}
+
+function restartTest() {
+    document.getElementById('test-result-screen').style.display = 'none';
+    document.getElementById('test-start-screen').style.display = 'block';
+}
+
+function reviewTest() {
+    const reviewEl = document.getElementById('test-review');
+    if (reviewEl.style.display === 'block') {
+        reviewEl.style.display = 'none';
+        return;
+    }
+    if (testWrongAnswers.length === 0) {
+        reviewEl.innerHTML = '<h3>Žiadne chyby — všetko správne.</h3>';
+    } else {
+        reviewEl.innerHTML = '<h3>Prehľad chýb</h3>' +
+            testWrongAnswers.map(w =>
+                `<div class="review-item">
+                    <div class="q">${w.q}</div>
+                    <div class="ans-given">Tvoja odpoveď: ${w.given}</div>
+                    <div class="ans-correct">Správna odpoveď: ${w.correct}</div>
+                </div>`
+            ).join('');
+    }
+    reviewEl.style.display = 'block';
+}
+</script>
+
+</body>
+</html>
